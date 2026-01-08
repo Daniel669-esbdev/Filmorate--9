@@ -4,51 +4,53 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/films")
 @Slf4j
 public class FilmController {
-    private final Map<Long, Film> films = new HashMap<>();
-    private long nextId = 1;
+    private final FilmService filmService;
+
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
+    }
 
     @GetMapping
-    public Collection<Film> findAll() {
-        log.info("Запрос на список всех фильмов. Количество: {}", films.size());
-        return films.values();
+    public List<Film> findAll() {
+        return List.copyOf(filmService.findAll());
     }
 
     @PostMapping
     public Film create(@Valid @RequestBody Film film) {
-        validateFilm(film);
-        film.setId(nextId++);
-        films.put(film.getId(), film);
-        log.info("Добавлен фильм: {}", film);
-        return film;
+        return filmService.create(film);
     }
 
     @PutMapping
     public Film update(@Valid @RequestBody Film film) {
-        if (!films.containsKey(film.getId())) {
-            log.warn("Обновить несуществующий фильм с id={}", film.getId());
-            throw new ValidationException("Фильм с id=" + film.getId() + " не найден");
-        }
-        validateFilm(film);
-        films.put(film.getId(), film);
-        log.info("Обновлен фильм: {}", film);
-        return film;
+        return filmService.update(film);
     }
 
-    private static final LocalDate EARLIEST_RELEASE_DATE = LocalDate.of(1895, 12, 28);
+    @GetMapping("/{id}")
+    public Film getById(@PathVariable Long id) {
+        return filmService.getById(id);
+    }
 
-    private void validateFilm(Film film) {
-        if (film.getReleaseDate().isBefore(EARLIEST_RELEASE_DATE)) {
-            throw new ValidationException("Дата релиза не может быть раньше 7 декабря 1950 года");
-        } // решил оставить текст( в будущем перепешу проект)
+    @PutMapping("/{id}/like/{userId}")
+    public void addLike(@PathVariable Long id, @PathVariable Long userId) {
+        filmService.addLike(id, userId);
+    }
+
+    @DeleteMapping("/{id}/like/{userId}")
+    public void deleteLike(@PathVariable Long id, @PathVariable Long userId) {
+        filmService.deleteLike(id, userId);
+    }
+
+    @GetMapping("/popular")
+    public List<Film> getPopular(@RequestParam(defaultValue = "10") int count) {
+        return filmService.getPopular(count);
     }
 }

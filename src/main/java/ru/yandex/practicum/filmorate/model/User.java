@@ -4,6 +4,8 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.Set;
+import java.util.HashSet;
 
 @Data
 public class User {
@@ -22,6 +24,8 @@ public class User {
 
     @PastOrPresent(message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
+
+    private Set<Long> friends = new HashSet<>();
 
     public String getName() {
         return (name == null || name.isBlank()) ? login : name;

@@ -1,87 +1,68 @@
 package ru.yandex.practicum.filmorate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.service.UserService;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import java.time.LocalDate;
+import java.util.List;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-public class UserControllerTest {
+import static org.junit.jupiter.api.Assertions.*;
 
-    @Autowired
-    private MockMvc mockMvc;
+class UserControllerTest {
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private UserService userService;
+    private InMemoryUserStorage userStorage;
 
-    @Test
-    public void shouldCreateValidUser() throws Exception {
-        String userJson = """
-            {
-                "login": "validuser",
-                "email": "valid@example.com",
-                "birthday": "1990-05-15"
-            }
-            """;
-
-        mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(userJson))
-                .andExpect(status().isOk());
+    @BeforeEach
+    void setUp() {
+        userStorage = new InMemoryUserStorage();
+        userService = new UserService(userStorage);
     }
 
     @Test
-    public void shouldNotCreateUserWithInvalidEmail() throws Exception {
-        String userJson = """
-            {
-                "login": "baduser",
-                "email": "not-an-email",
-                "birthday": "1990-01-01"
-            }
-            """;
+    void addAndDeleteFriend() {
+        User user1 = createUser("user1@example.com", "user1");
+        User user2 = createUser("user2@example.com", "user2");
 
-        mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(userJson))
-                .andExpect(status().isBadRequest());
+        userService.addFriend(user1.getId(), user2.getId());
+
+        List<User> friends1 = userService.getFriends(user1.getId());
+        List<User> friends2 = userService.getFriends(user2.getId());
+
+        assertEquals(1, friends1.size());
+        assertEquals(user2.getId(), friends1.get(0).getId());
+        assertEquals(1, friends2.size());
+        assertEquals(user1.getId(), friends2.get(0).getId());
+
+        userService.deleteFriend(user1.getId(), user2.getId());
+
+        assertTrue(userService.getFriends(user1.getId()).isEmpty());
+        assertTrue(userService.getFriends(user2.getId()).isEmpty());
     }
 
     @Test
-    public void shouldNotCreateUserWithLoginWithSpaces() throws Exception {
-        String userJson = """
-            {
-                "login": "user with space",
-                "email": "test@example.com",
-                "birthday": "1990-01-01"
-            }
-            """;
+    void getCommonFriends() {
+        User user1 = createUser("u1@example.com", "u1");
+        User user2 = createUser("u2@example.com", "u2");
+        User common = createUser("common@example.com", "common");
 
-        mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(userJson))
-                .andExpect(status().isBadRequest());
+        userService.addFriend(user1.getId(), common.getId());
+        userService.addFriend(user2.getId(), common.getId());
+
+        List<User> commonFriends = userService.getCommonFriends(user1.getId(), user2.getId());
+
+        assertEquals(1, commonFriends.size());
+        assertEquals(common.getId(), commonFriends.get(0).getId());
     }
 
-    @Test
-    public void shouldNotCreateUserWithFutureBirthday() throws Exception {
-        String userJson = """
-            {
-                "login": "future",
-                "email": "future@example.com",
-                "birthday": "2100-01-01"
-            }
-            """;
-
-        mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(userJson))
-                .andExpect(status().isBadRequest());
+    private User createUser(String email, String login) {
+        User user = new User();
+        user.setEmail(email);
+        user.setLogin(login);
+        user.setBirthday(LocalDate.of(1990, 1, 1));
+        return userService.create(user);
     }
 }

@@ -1,86 +1,74 @@
 package ru.yandex.practicum.filmorate;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import ru.yandex.practicum.filmorate.controller.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class FilmorateApplicationTests {
 
-	@Test
-	void shouldCreateValidFilm() {
-		Film film = new Film();
-		film.setName("Valid Film");
-		film.setDescription("Good description");
-		film.setReleaseDate(LocalDate.of(2000, 1, 1));
-		film.setDuration(120);
+	private FilmService filmService;
+	private InMemoryFilmStorage filmStorage;
 
-		assertDoesNotThrow(() -> validate(film));
+	@BeforeEach
+	void setUp() {
+		filmStorage = new InMemoryFilmStorage();
+		filmService = new FilmService(filmStorage);
 	}
 
 	@Test
-	void shouldThrowWhenNameIsEmpty() {
+	void addAndDeleteLike() {
 		Film film = new Film();
-		film.setName("");
+		film.setName("Test Film");
 		film.setDescription("Desc");
 		film.setReleaseDate(LocalDate.of(2000, 1, 1));
 		film.setDuration(120);
 
-		ValidationException ex = assertThrows(ValidationException.class, () -> validate(film));
-		assertTrue(ex.getMessage().contains("Название"));
+		film = filmService.create(film);
+
+		filmService.addLike(film.getId(), 1L);
+		filmService.addLike(film.getId(), 2L);
+
+		Film updatedFilm = filmService.getById(film.getId());
+		assertEquals(2, updatedFilm.getLikes().size());
+		assertTrue(updatedFilm.getLikes().contains(1L));
+		assertTrue(updatedFilm.getLikes().contains(2L));
+
+		filmService.deleteLike(film.getId(), 1L);
+
+		updatedFilm = filmService.getById(film.getId());
+		assertEquals(1, updatedFilm.getLikes().size());
+		assertFalse(updatedFilm.getLikes().contains(1L));
 	}
 
 	@Test
-	void shouldThrowWhenDescriptionTooLong() {
+	void getPopularFilms() {
+		Film film1 = createFilm("Film 1");
+		Film film2 = createFilm("Film 2");
+
+		filmService.addLike(film1.getId(), 1L);
+		filmService.addLike(film1.getId(), 2L);
+		filmService.addLike(film2.getId(), 1L);
+
+		List<Film> popular = filmService.getPopular(10);
+
+		assertEquals(2, popular.size());
+		assertEquals(film1.getId(), popular.get(0).getId());
+		assertEquals(film2.getId(), popular.get(1).getId());
+	}
+
+	private Film createFilm(String name) {
 		Film film = new Film();
-		film.setName("Film");
-		film.setDescription("a".repeat(201));
+		film.setName(name);
+		film.setDescription("Desc");
 		film.setReleaseDate(LocalDate.of(2000, 1, 1));
 		film.setDuration(120);
-
-		ValidationException ex = assertThrows(ValidationException.class, () -> validate(film));
-		assertTrue(ex.getMessage().contains("200 символов"));
-	}
-
-	@Test
-	void shouldThrowWhenReleaseDateTooEarly() {
-		Film film = new Film();
-		film.setName("Old Film");
-		film.setDescription("Desc");
-		film.setReleaseDate(LocalDate.of(1950, 12, 27));
-		film.setDuration(120);
-
-		ValidationException ex = assertThrows(ValidationException.class, () -> validate(film));
-		assertTrue(ex.getMessage().contains("28 декабря 1950"));
-	}
-
-	@Test
-	void shouldThrowWhenDurationNegative() {
-		Film film = new Film();
-		film.setName("Film");
-		film.setDescription("Desc");
-		film.setReleaseDate(LocalDate.of(2000, 1, 1));
-		film.setDuration(-100);
-
-		ValidationException ex = assertThrows(ValidationException.class, () -> validate(film));
-		assertTrue(ex.getMessage().contains("положительной"));
-	}
-
-	private void validate(Film film) {
-		if (film.getName() == null || film.getName().isBlank()) {
-			throw new ValidationException("Название не может быть пустым");
-		}
-		if (film.getDescription() != null && film.getDescription().length() > 200) {
-			throw new ValidationException("Описание не может превышать 200 символов");
-		}
-		if (film.getReleaseDate() != null && film.getReleaseDate().isBefore(LocalDate.of(1950, 12, 28))) {
-			throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1950 года");
-		}
-		if (film.getDuration() <= 0) {
-			throw new ValidationException("Продолжительность должна быть положительной");
-		}
+		return filmService.create(film);
 	}
 }
