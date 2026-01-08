@@ -25,4 +25,20 @@ public class ErrorHandler {
     public ErrorResponse handleThrowable(Throwable e) {
         return new ErrorResponse("Произошла непредвиденная ошибка: " + e.getMessage());
     }
+
+    class ErrorResponse {
+        private String error;
+
+        public ErrorResponse(String error) {
+            this.error = error;
+        }
+
+        public String getError() {
+            return error;
+        }
+
+        public void setError(String error) {
+            this.error = error;
+        }
+    }
 }
