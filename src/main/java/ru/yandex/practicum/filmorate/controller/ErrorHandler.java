@@ -8,21 +8,37 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class ErrorHandler {
 
-    @ExceptionHandler
+    @ExceptionHandler(ValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String handleValidationException(ValidationException e) {
-        return e.getMessage();
+    public ErrorResponse handleValidationException(ValidationException e) {
+        return new ErrorResponse(e.getMessage());
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public String handleNotFound(Exception e) {
-        return "Объект не найден";
+    public ErrorResponse handleNotFoundException(NotFoundException e) {
+        return new ErrorResponse(e.getMessage());
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(Throwable.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public String handleThrowable(Throwable e) {
-        return "Произошла ошибка на сервере";
+    public ErrorResponse handleThrowable(Throwable e) {
+        return new ErrorResponse("Произошла непредвиденная ошибка: " + e.getMessage());
+    }
+}
+
+class ErrorResponse {
+    private String error;
+
+    public ErrorResponse(String error) {
+        this.error = error;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
     }
 }
