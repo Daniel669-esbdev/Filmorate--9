@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.controller.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
@@ -30,12 +31,16 @@ public class UserService {
     }
 
     public User getById(Long id) {
-        return userStorage.getById(id);
+        User user = userStorage.getById(id);
+        if (user == null) {
+            throw new NotFoundException("Пользователь с id=" + id + " не найден");
+        }
+        return user;
     }
 
     public void addFriend(Long userId, Long friendId) {
-        User user = userStorage.getById(userId);
-        User friend = userStorage.getById(friendId);
+        User user = getById(userId);
+        User friend = getById(friendId);
 
         if (user.getFriends() == null) {
             user.setFriends(new HashSet<>());
@@ -49,8 +54,8 @@ public class UserService {
     }
 
     public void deleteFriend(Long userId, Long friendId) {
-        User user = userStorage.getById(userId);
-        User friend = userStorage.getById(friendId);
+        User user = getById(userId);
+        User friend = getById(friendId);
 
         if (user.getFriends() != null) {
             user.getFriends().remove(friendId);
@@ -61,7 +66,7 @@ public class UserService {
     }
 
     public List<User> getFriends(Long userId) {
-        User user = userStorage.getById(userId);
+        User user = getById(userId);
         if (user.getFriends() == null) {
             return List.of();
         }
@@ -71,8 +76,8 @@ public class UserService {
     }
 
     public List<User> getCommonFriends(Long userId, Long otherId) {
-        User user = userStorage.getById(userId);
-        User other = userStorage.getById(otherId);
+        User user = getById(userId);
+        User other = getById(otherId);
 
         if (user.getFriends() == null || other.getFriends() == null) {
             return List.of();

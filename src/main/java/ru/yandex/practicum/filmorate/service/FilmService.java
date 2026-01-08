@@ -39,10 +39,8 @@ public class FilmService {
     }
 
     public void addLike(Long filmId, Long userId) {
-        Film film = filmStorage.getById(filmId);
-        if (film == null) {
-            throw new NotFoundException("Фильм с id=" + filmId + " не найден");
-        }
+        Film film = getById(filmId);
+
         if (film.getLikes() == null) {
             film.setLikes(new HashSet<>());
         }
@@ -50,10 +48,8 @@ public class FilmService {
     }
 
     public void deleteLike(Long filmId, Long userId) {
-        Film film = filmStorage.getById(filmId);
-        if (film == null) {
-            throw new NotFoundException("Фильм с id=" + filmId + " не найден");
-        }
+        Film film = getById(filmId);
+
         if (film.getLikes() != null) {
             film.getLikes().remove(userId);
         }
