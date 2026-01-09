@@ -2,8 +2,8 @@ package ru.yandex.practicum.filmorate.model;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 
 import java.time.LocalDate;
 
@@ -22,10 +22,8 @@ public class Film {
     @PastOrPresent(message = "Дата релиза не может быть в будущем")
     private LocalDate releaseDate;
 
-    @Positive(message = "Продолжительность должна быть")
+    @Positive(message = "Продолжительность должна быть положительной")
     private long duration;
 
     private Set<Long> likes = new HashSet<>();
-
-    private Set<Genre> genres = new HashSet<>();
 }

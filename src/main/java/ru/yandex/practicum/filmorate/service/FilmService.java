@@ -11,7 +11,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 public class FilmService {
@@ -62,24 +61,8 @@ public class FilmService {
         }
     }
 
-    public List<Film> getPopular(int count, Integer genreId, Integer year) {
-        Stream<Film> films = filmStorage.findAll().stream();
-
-        if (genreId != null) {
-            films = films.filter(film ->
-                    film.getGenres() != null &&
-                            film.getGenres().stream().anyMatch(g -> g.getId() == genreId)
-            );
-        }
-
-        if (year != null) {
-            films = films.filter(film ->
-                    film.getReleaseDate() != null &&
-                            film.getReleaseDate().getYear() == year
-            );
-        }
-
-        return films
+    public List<Film> getPopular(int count) {
+        return filmStorage.findAll().stream()
                 .sorted((f1, f2) -> {
                     int likes1 = f1.getLikes() == null ? 0 : f1.getLikes().size();
                     int likes2 = f2.getLikes() == null ? 0 : f2.getLikes().size();
@@ -87,10 +70,6 @@ public class FilmService {
                 })
                 .limit(count)
                 .collect(Collectors.toList());
-    }
-
-    public List<Film> getPopular(int count) {
-        return getPopular(count, null, null);
     }
 
     private void validateFilm(Film film) {
