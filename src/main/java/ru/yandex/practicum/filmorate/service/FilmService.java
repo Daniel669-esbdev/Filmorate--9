@@ -29,7 +29,6 @@ public class FilmService {
     }
 
     public Film create(Film film) {
-        validateFilm(film);
         return filmStorage.create(film);
     }
 
@@ -37,7 +36,6 @@ public class FilmService {
         if (filmStorage.getById(film.getId()) == null) {
             throw new NotFoundException("Фильм с id=" + film.getId() + " не найден");
         }
-        validateFilm(film);
         return filmStorage.update(film);
     }
 
@@ -82,17 +80,8 @@ public class FilmService {
     }
 
     private void validateFilm(Film film) {
-        if (film.getName() == null || film.getName().isBlank()) {
-            throw new ValidationException("Название не может быть пустым");
-        }
-        if (film.getDescription() != null && film.getDescription().length() > 200) {
-            throw new ValidationException("Описание не может превышать 200 символов");
-        }
         if (film.getReleaseDate() != null && film.getReleaseDate().isBefore(EARLIEST_RELEASE_DATE)) {
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
-        }
-        if (film.getDuration() <= 0) {
-            throw new ValidationException("Продолжительность должна быть положительной");
         }
     }
 }
