@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.controller.NotFoundException;
 import ru.yandex.practicum.filmorate.controller.ValidationException;
@@ -13,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class FilmService {
     private final FilmStorage filmStorage;
@@ -25,33 +27,39 @@ public class FilmService {
     }
 
     public Collection<Film> findAll() {
+        log.info("Fetching all films");
         return filmStorage.findAll();
     }
 
     public Film create(Film film) {
+        log.info("Creating film: {}", film);
         validateFilm(film);
-        return filmStorage.create(film);
+        Film created = filmStorage.create(film);
+        log.info("Film created with id: {}", created.getId());
+        return created;
     }
 
     public Film update(Film film) {
-        if (filmStorage.getById(film.getId()) == null) {
+        log.info("Updating film id: {}", film.getId());
+        if (filmStorage.getById(film.getId()).isEmpty()) {
             throw new NotFoundException("Фильм с id=" + film.getId() + " не найден");
         }
         validateFilm(film);
-        return filmStorage.update(film);
+        Film updated = filmStorage.update(film);
+        log.info("Film updated successfully");
+        return updated;
     }
 
     public Film getById(Long id) {
-        Film film = filmStorage.getById(id);
-        if (film == null) {
-            throw new NotFoundException("Фильм с id=" + id + " не найден");
-        }
-        return film;
+        log.info("Getting film by id: {}", id);
+        return filmStorage.getById(id)
+                .orElseThrow(() -> new NotFoundException("Фильм с id=" + id + " не найден"));
     }
 
     public void addLike(Long filmId, Long userId) {
+        log.info("Adding like from user {} to film {}", userId, filmId);
         Film film = getById(filmId);
-        if (userStorage.getById(userId) == null) {
+        if (userStorage.getById(userId).isEmpty()) {
             throw new NotFoundException("Пользователь с id=" + userId + " не найден");
         }
         if (film.getLikes() == null) {
@@ -61,8 +69,9 @@ public class FilmService {
     }
 
     public void deleteLike(Long filmId, Long userId) {
+        log.info("Removing like from user {} to film {}", userId, filmId);
         Film film = getById(filmId);
-        if (userStorage.getById(userId) == null) {
+        if (userStorage.getById(userId).isEmpty()) {
             throw new NotFoundException("Пользователь с id=" + userId + " не найден");
         }
         if (film.getLikes() != null) {
@@ -71,6 +80,10 @@ public class FilmService {
     }
 
     public List<Film> getPopular(int count) {
+        if (count <= 0) {
+            throw new IllegalArgumentException("Count must be greater than 0");
+        }
+        log.info("Fetching popular films, count: {}", count);
         return filmStorage.findAll().stream()
                 .sorted((f1, f2) -> {
                     int likes1 = f1.getLikes() == null ? 0 : f1.getLikes().size();
