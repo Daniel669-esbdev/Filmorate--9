@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.storage;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -13,13 +14,10 @@ import java.sql.SQLException;
 import java.util.*;
 
 @Component
+@RequiredArgsConstructor
 public class UserDbStorage implements UserStorage {
 
     private final JdbcTemplate jdbcTemplate;
-
-    public UserDbStorage(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
 
     @Override
     public List<User> findAll() {
@@ -83,15 +81,19 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void addFriend(Long userId, Long friendId) {
-        String sql = "INSERT INTO friendship (user_id, friend_id) VALUES (?, ?) ON CONFLICT DO NOTHING";
-        jdbcTemplate.update(sql, userId, friendId);
-        jdbcTemplate.update(sql, friendId, userId);
+        String checkSql = "SELECT COUNT(*) FROM friendship WHERE user_id = ? AND friend_id = ?";
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId, friendId);
+
+        if (count == 0) {
+            String insertSql = "INSERT INTO friendship (user_id, friend_id) VALUES (?, ?)";
+            jdbcTemplate.update(insertSql, userId, friendId);
+        }
     }
 
     @Override
     public void deleteFriend(Long userId, Long friendId) {
-        String sql = "DELETE FROM friendship WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)";
-        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
+        String sql = "DELETE FROM friendship WHERE user_id = ? AND friend_id = ?";
+        jdbcTemplate.update(sql, userId, friendId);
     }
 
     @Override
@@ -100,6 +102,7 @@ public class UserDbStorage implements UserStorage {
                 SELECT u.* FROM users u
                 JOIN friendship f ON u.id = f.friend_id
                 WHERE f.user_id = ?
+                ORDER BY u.id
                 """;
         return jdbcTemplate.query(sql, this::mapRowToUser, userId);
     }
@@ -110,6 +113,7 @@ public class UserDbStorage implements UserStorage {
                 SELECT u.* FROM users u
                 JOIN friendship f1 ON u.id = f1.friend_id AND f1.user_id = ?
                 JOIN friendship f2 ON u.id = f2.friend_id AND f2.user_id = ?
+                ORDER BY u.id
                 """;
         return jdbcTemplate.query(sql, this::mapRowToUser, userId, otherId);
     }

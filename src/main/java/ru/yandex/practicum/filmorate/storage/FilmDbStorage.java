@@ -40,7 +40,7 @@ public class FilmDbStorage implements FilmStorage {
             stmt.setString(1, film.getName());
             stmt.setString(2, film.getDescription());
             stmt.setDate(3, java.sql.Date.valueOf(film.getReleaseDate()));
-            stmt.setLong(4, film.getDuration());
+            stmt.setInt(4, film.getDuration());
             return stmt;
         }, keyHolder);
 
@@ -121,7 +121,7 @@ public class FilmDbStorage implements FilmStorage {
         film.setName(rs.getString("name"));
         film.setDescription(rs.getString("description"));
         film.setReleaseDate(rs.getDate("release_date").toLocalDate());
-        film.setDuration(rs.getLong("duration"));
+        film.setDuration(rs.getInt("duration"));
         film.setLikes(new HashSet<>());
         return film;
     }

@@ -1,11 +1,12 @@
 package ru.yandex.practicum.filmorate.storage;
 
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.test.context.jdbc.Sql;
+import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
@@ -15,14 +16,27 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @JdbcTest
-@AutoConfigureTestDatabase
+@Import(UserDbStorage.class)
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class UserDbStorageTests {
 
     private final UserDbStorage userStorage;
+    private final JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void setUp() {
+        jdbcTemplate.update("DELETE FROM friendship");
+        jdbcTemplate.update("DELETE FROM users");
+
+        jdbcTemplate.update(
+                "INSERT INTO users (email, login, name, birthday) VALUES ('anna@example.com', 'anna', 'Анна', '1985-05-12')");
+        jdbcTemplate.update(
+                "INSERT INTO users (email, login, name, birthday) VALUES ('pavel@example.com', 'pavel', 'Павел', '1992-03-19')");
+        jdbcTemplate.update(
+                "INSERT INTO users (email, login, name, birthday) VALUES ('maria@example.com', 'maria', 'Мария', '2001-11-30')");
+    }
 
     @Test
-    @Sql(scripts = {"/sql/clean.sql", "/sql/data-users.sql"})
     void shouldCreateAndFindUserById() {
         User user = new User();
         user.setEmail("testcreate@example.com");
@@ -31,8 +45,6 @@ class UserDbStorageTests {
         user.setBirthday(LocalDate.of(1995, 6, 15));
 
         User created = userStorage.create(user);
-
-        assertThat(created.getId()).isNotNull().isGreaterThan(0L);
 
         Optional<User> found = userStorage.getById(created.getId());
 
@@ -44,59 +56,45 @@ class UserDbStorageTests {
     }
 
     @Test
-    @Sql(scripts = {"/sql/clean.sql", "/sql/data-users.sql"})
     void shouldUpdateExistingUser() {
-        Optional<User> userOptional = userStorage.getById(1L);
-        assertThat(userOptional).isPresent();
+        User user = userStorage.findAll().get(0);
 
-        User user = userOptional.get();
-        String newName = "Новое Имя После Обновления";
-        String newEmail = "updated@example.com";
-
-        user.setName(newName);
-        user.setEmail(newEmail);
+        user.setName("Новое Имя После Обновления");
+        user.setEmail("updated@example.com");
 
         User updated = userStorage.update(user);
 
-        assertThat(updated.getName()).isEqualTo(newName);
-        assertThat(updated.getEmail()).isEqualTo(newEmail);
+        User fromDb = userStorage.getById(updated.getId()).orElseThrow();
 
-        User fromDb = userStorage.getById(1L).orElseThrow();
-        assertThat(fromDb.getName()).isEqualTo(newName);
-        assertThat(fromDb.getEmail()).isEqualTo(newEmail);
+        assertThat(fromDb.getName()).isEqualTo("Новое Имя После Обновления");
+        assertThat(fromDb.getEmail()).isEqualTo("updated@example.com");
     }
 
     @Test
-    @Sql(scripts = {"/sql/clean.sql", "/sql/data-users.sql"})
     void shouldFindAllUsers() {
         List<User> allUsers = userStorage.findAll();
-
-        assertThat(allUsers).isNotEmpty();
-        assertThat(allUsers).hasSizeGreaterThanOrEqualTo(3);
+        assertThat(allUsers).hasSize(3);
     }
 
     @Test
-    @Sql(scripts = {"/sql/clean.sql", "/sql/data-users.sql"})
     void shouldAddAndRemoveFriend() {
-        Long userId = 1L;
-        Long friendId = 2L;
+        List<User> users = userStorage.findAll();
+
+        Long userId = users.get(0).getId();
+        Long friendId = users.get(1).getId();
 
         userStorage.addFriend(userId, friendId);
 
         List<User> friends = userStorage.getFriends(userId);
-        assertThat(friends).isNotEmpty();
         assertThat(friends).extracting(User::getId).contains(friendId);
 
         userStorage.deleteFriend(userId, friendId);
 
         List<User> friendsAfterDelete = userStorage.getFriends(userId);
-        assertThat(friendsAfterDelete)
-                .extracting(User::getId)
-                .doesNotContain(friendId);
+        assertThat(friendsAfterDelete).isEmpty();
     }
 
     @Test
-    @Sql(scripts = {"/sql/clean.sql", "/sql/data-users.sql"})
     void shouldNotFindNonExistentUser() {
         Optional<User> user = userStorage.getById(9999L);
         assertThat(user).isEmpty();
