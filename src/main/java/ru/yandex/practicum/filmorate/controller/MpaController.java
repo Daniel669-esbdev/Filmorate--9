@@ -26,6 +26,6 @@ public class MpaController {
     @GetMapping("/{id}")
     public Mpa getById(@PathVariable int id) {
         return mpaStorage.findById(id)
-                .orElseThrow(() -> new NotFoundException("Рейтинг с id=" + id + " не найден"));
+                .orElseThrow(() -> new NotFoundException("Рейтинг MPA с id=" + id + " не найден"));
     }
 }
