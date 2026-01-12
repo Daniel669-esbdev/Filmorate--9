@@ -2,17 +2,15 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.controller.NotFoundException;
-import ru.yandex.practicum.filmorate.controller.ValidationException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.time.LocalDate;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -49,34 +47,22 @@ public class FilmService {
     }
 
     public void addLike(Long filmId, Long userId) {
-        Film film = getById(filmId);
+        getById(filmId);
         validateUserExists(userId);
-        if (film.getLikes() == null) {
-            film.setLikes(new HashSet<>());
-        }
-        film.getLikes().add(userId);
+        filmStorage.addLike(filmId, userId);
     }
 
     public void deleteLike(Long filmId, Long userId) {
-        Film film = getById(filmId);
+        getById(filmId);
         validateUserExists(userId);
-        if (film.getLikes() != null) {
-            film.getLikes().remove(userId);
-        }
+        filmStorage.deleteLike(filmId, userId);
     }
 
     public List<Film> getPopular(int count) {
         if (count <= 0) {
             throw new IllegalArgumentException("Count must be greater than 0");
         }
-        return filmStorage.findAll().stream()
-                .sorted((f1, f2) -> {
-                    int likes1 = f1.getLikes() == null ? 0 : f1.getLikes().size();
-                    int likes2 = f2.getLikes() == null ? 0 : f2.getLikes().size();
-                    return Integer.compare(likes2, likes1);
-                })
-                .limit(count)
-                .collect(Collectors.toList());
+        return filmStorage.getPopular(count);
     }
 
     private void validateFilm(Film film) {
