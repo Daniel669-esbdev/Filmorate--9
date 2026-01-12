@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
+
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -17,7 +18,7 @@ public class User {
     private long id;
 
     @Email(message = "Email должен быть корректным")
-    @NotBlank(message = "Email не може быть пустым")
+    @NotBlank(message = "Email не может быть пустым")
     private String email;
 
     @NotBlank(message = "Логин не может быть пустым")
@@ -30,6 +31,7 @@ public class User {
     private LocalDate birthday;
 
     private Set<Long> friends = new HashSet<>();
+
 
     public String getName() {
         return (name == null || name.isBlank()) ? login : name;
