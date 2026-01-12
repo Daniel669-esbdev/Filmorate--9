@@ -98,5 +98,5 @@ class UserDbStorageTests {
     void shouldNotFindNonExistentUser() {
         Optional<User> user = userStorage.getById(9999L);
         assertThat(user).isEmpty();
-    }
+    }//
 }
