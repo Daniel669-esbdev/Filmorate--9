@@ -27,41 +27,30 @@ public class FilmService {
     }
 
     public Collection<Film> findAll() {
-        log.info("Fetching all films");
         return filmStorage.findAll();
     }
 
     public Film create(Film film) {
-        log.info("Creating film: {}", film);
         validateFilm(film);
-        Film created = filmStorage.create(film);
-        log.info("Film created with id: {}", created.getId());
-        return created;
+        return filmStorage.create(film);
     }
 
     public Film update(Film film) {
-        log.info("Updating film id: {}", film.getId());
         if (filmStorage.getById(film.getId()).isEmpty()) {
             throw new NotFoundException("Фильм с id=" + film.getId() + " не найден");
         }
         validateFilm(film);
-        Film updated = filmStorage.update(film);
-        log.info("Film updated successfully");
-        return updated;
+        return filmStorage.update(film);
     }
 
     public Film getById(Long id) {
-        log.info("Getting film by id: {}", id);
         return filmStorage.getById(id)
                 .orElseThrow(() -> new NotFoundException("Фильм с id=" + id + " не найден"));
     }
 
     public void addLike(Long filmId, Long userId) {
-        log.info("Adding like from user {} to film {}", userId, filmId);
         Film film = getById(filmId);
-        if (userStorage.getById(userId).isEmpty()) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
-        }
+        validateUserExists(userId);
         if (film.getLikes() == null) {
             film.setLikes(new HashSet<>());
         }
@@ -69,11 +58,8 @@ public class FilmService {
     }
 
     public void deleteLike(Long filmId, Long userId) {
-        log.info("Removing like from user {} to film {}", userId, filmId);
         Film film = getById(filmId);
-        if (userStorage.getById(userId).isEmpty()) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
-        }
+        validateUserExists(userId);
         if (film.getLikes() != null) {
             film.getLikes().remove(userId);
         }
@@ -83,7 +69,6 @@ public class FilmService {
         if (count <= 0) {
             throw new IllegalArgumentException("Count must be greater than 0");
         }
-        log.info("Fetching popular films, count: {}", count);
         return filmStorage.findAll().stream()
                 .sorted((f1, f2) -> {
                     int likes1 = f1.getLikes() == null ? 0 : f1.getLikes().size();
@@ -97,6 +82,12 @@ public class FilmService {
     private void validateFilm(Film film) {
         if (film.getReleaseDate() != null && film.getReleaseDate().isBefore(EARLIEST_RELEASE_DATE)) {
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
+        }
+    }
+
+    private void validateUserExists(Long userId) {
+        if (userStorage.getById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
         }
     }
 }

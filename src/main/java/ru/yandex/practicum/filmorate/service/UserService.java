@@ -34,8 +34,7 @@ public class UserService {
 
     public User update(User user) {
         log.info("Updating user id: {}", user.getId());
-        User existing = userStorage.getById(user.getId())
-                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + user.getId() + " не найден"));
+        User existing = getUserOrThrow(user.getId());
         User updated = userStorage.update(user);
         log.info("User updated successfully");
         return updated;
@@ -43,14 +42,13 @@ public class UserService {
 
     public User getById(Long id) {
         log.info("Fetching user by id: {}", id);
-        return userStorage.getById(id)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + id + " не найден"));
+        return getUserOrThrow(id);
     }
 
     public void addFriend(Long userId, Long friendId) {
         log.info("Adding friend {} to user {}", friendId, userId);
-        User user = getById(userId);
-        User friend = getById(friendId);
+        User user = getUserOrThrow(userId);
+        User friend = getUserOrThrow(friendId);
 
         if (user.getFriends() == null) {
             user.setFriends(new HashSet<>());
@@ -66,8 +64,8 @@ public class UserService {
 
     public void deleteFriend(Long userId, Long friendId) {
         log.info("Removing friend {} from user {}", friendId, userId);
-        User user = getById(userId);
-        User friend = getById(friendId);
+        User user = getUserOrThrow(userId);
+        User friend = getUserOrThrow(friendId);
 
         if (user.getFriends() != null) {
             user.getFriends().remove(friendId);
@@ -83,7 +81,7 @@ public class UserService {
 
     public List<User> getFriends(Long userId) {
         log.info("Fetching friends for user {}", userId);
-        User user = getById(userId);
+        User user = getUserOrThrow(userId);
         if (user.getFriends() == null) {
             return List.of();
         }
@@ -95,8 +93,8 @@ public class UserService {
 
     public List<User> getCommonFriends(Long userId, Long otherId) {
         log.info("Fetching common friends between {} and {}", userId, otherId);
-        User user = getById(userId);
-        User other = getById(otherId);
+        User user = getUserOrThrow(userId);
+        User other = getUserOrThrow(otherId);
 
         if (user.getFriends() == null || other.getFriends() == null) {
             return List.of();
@@ -107,5 +105,10 @@ public class UserService {
                 .map(userStorage::getById)
                 .map(opt -> opt.orElseThrow(() -> new NotFoundException("Common friend not found")))
                 .collect(Collectors.toList());
+    }
+
+    private User getUserOrThrow(Long id) {
+        return userStorage.getById(id)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + id + " не найден"));
     }
 }
