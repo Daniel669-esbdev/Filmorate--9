@@ -63,8 +63,6 @@ public class FilmDbStorage implements FilmStorage {
         film.setId(id);
 
         saveGenres(id, film.getGenres());
-        saveLikes(id, film.getLikes());
-
         log.info("Фильм создан, id={}", id);
         return getById(id).orElseThrow();
     }

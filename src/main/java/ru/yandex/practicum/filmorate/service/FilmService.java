@@ -75,9 +75,7 @@ public class FilmService {
     public void addLike(Long filmId, Long userId) {
         log.info("Добавление лайка: filmId={}, userId={}", filmId, userId);
         getById(filmId);
-        if (userStorage.getById(userId).isEmpty()) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
-        }
+        validateUserExists(userId);
         filmStorage.addLike(filmId, userId);
         log.info("Лайк добавлен успешно: filmId={}, userId={}", filmId, userId);
     }
@@ -85,9 +83,7 @@ public class FilmService {
     public void deleteLike(Long filmId, Long userId) {
         log.info("Удаление лайка: filmId={}, userId={}", filmId, userId);
         getById(filmId);
-        if (userStorage.getById(userId).isEmpty()) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
-        }
+        validateUserExists(userId);
         filmStorage.deleteLike(filmId, userId);
         log.info("Лайк удалён: filmId={}, userId={}", filmId, userId);
     }
@@ -124,5 +120,11 @@ public class FilmService {
         }
 
         log.debug("Валидация фильма прошла успешно");
+    }
+
+    private void validateUserExists(Long userId) {
+        if (userStorage.getById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+        }
     }
 }

@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Mpa;
-import ru.yandex.practicum.filmorate.storage.MpaDbStorage;
+import ru.yandex.practicum.filmorate.service.MpaService;
 
 import java.util.List;
 
@@ -16,16 +16,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MpaController {
 
-    private final MpaDbStorage mpaStorage;
+    private final MpaService mpaService;
 
     @GetMapping
     public List<Mpa> getAll() {
-        return mpaStorage.findAll();
+        return mpaService.findAll();
     }
 
     @GetMapping("/{id}")
     public Mpa getById(@PathVariable int id) {
-        return mpaStorage.findById(id)
-                .orElseThrow(() -> new NotFoundException("Рейтинг с id=" + id + " не найден"));
+        return mpaService.findById(id);
     }
 }
