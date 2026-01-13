@@ -125,7 +125,7 @@ public class FilmDbStorage implements FilmStorage {
     public List<Film> getPopular(int count) {
         String sql = """
             SELECT f.*, m.id AS mpa_id, m.name AS mpa_name,
-                   COALESCE(COUNT(fl.user_id), 0) AS likes_count
+                   COALESCE(COUNT(DISTINCT fl.user_id), 0) AS likes_count
             FROM films f
             LEFT JOIN mpa m ON f.mpa_id = m.id
             LEFT JOIN film_likes fl ON f.id = fl.film_id
