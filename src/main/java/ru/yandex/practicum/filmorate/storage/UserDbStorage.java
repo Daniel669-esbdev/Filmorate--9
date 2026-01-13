@@ -22,9 +22,7 @@ public class UserDbStorage implements UserStorage {
     @Override
     public List<User> findAll() {
         String sql = "SELECT * FROM users";
-        List<User> users = jdbcTemplate.query(sql, this::mapRowToUser);
-        loadFriendsForUsers(users);
-        return users;
+        return jdbcTemplate.query(sql, this::mapRowToUser);
     }
 
     @Override
@@ -73,10 +71,7 @@ public class UserDbStorage implements UserStorage {
             return Optional.empty();
         }
 
-        User user = users.get(0);
-        loadFriendsForUser(user);
-
-        return Optional.of(user);
+        return Optional.of(users.get(0));
     }
 
     @Override
@@ -125,38 +120,6 @@ public class UserDbStorage implements UserStorage {
         user.setLogin(rs.getString("login"));
         user.setName(rs.getString("name"));
         user.setBirthday(rs.getDate("birthday").toLocalDate());
-        user.setFriends(new HashSet<>());
         return user;
-    }
-
-    private void loadFriendsForUser(User user) {
-        String sql = "SELECT friend_id FROM friendship WHERE user_id = ?";
-        Set<Long> friends = new HashSet<>(
-                jdbcTemplate.queryForList(sql, Long.class, user.getId())
-        );
-        user.setFriends(friends);
-    }
-
-    private void loadFriendsForUsers(List<User> users) {
-        if (users.isEmpty()) return;
-
-        String placeholders = String.join(",", Collections.nCopies(users.size(), "?"));
-        String sql = "SELECT user_id, friend_id FROM friendship WHERE user_id IN (" + placeholders + ")";
-
-        List<Long> ids = users.stream().map(User::getId).toList();
-
-        Map<Long, Set<Long>> friendsMap = new HashMap<>();
-        jdbcTemplate.query(sql,
-                rs -> {
-                    long userId = rs.getLong("user_id");
-                    long friendId = rs.getLong("friend_id");
-                    friendsMap.computeIfAbsent(userId, k -> new HashSet<>()).add(friendId);
-                },
-                ids.toArray(new Long[0])
-        );
-
-        for (User user : users) {
-            user.setFriends(friendsMap.getOrDefault(user.getId(), new HashSet<>()));
-        }
     }
 }
