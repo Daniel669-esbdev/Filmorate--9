@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.storage;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -15,6 +16,7 @@ import java.sql.SQLException;
 import java.util.*;
 
 @Component
+@Slf4j
 public class FilmDbStorage implements FilmStorage {
 
     private final JdbcTemplate jdbcTemplate;
@@ -25,6 +27,7 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Collection<Film> findAll() {
+        log.debug("Запрос на получение всех фильмов");
         String sql = """
                 SELECT f.*, m.id AS mpa_id, m.name AS mpa_name
                 FROM films f
@@ -32,11 +35,13 @@ public class FilmDbStorage implements FilmStorage {
                 """;
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm);
         loadGenresAndLikesForFilms(films);
+        log.debug("Получено фильмов: {}", films.size());
         return films;
     }
 
     @Override
     public Film create(Film film) {
+        log.info("Создание фильма: name={}, releaseDate={}", film.getName(), film.getReleaseDate());
         String sql = """
                 INSERT INTO films (name, description, release_date, duration, mpa_id)
                 VALUES (?, ?, ?, ?, ?)
@@ -60,11 +65,13 @@ public class FilmDbStorage implements FilmStorage {
         saveGenres(id, film.getGenres());
         saveLikes(id, film.getLikes());
 
+        log.info("Фильм создан, id={}", id);
         return getById(id).orElseThrow();
     }
 
     @Override
     public Film update(Film film) {
+        log.info("Обновление фильма id={}", film.getId());
         String sql = """
                 UPDATE films
                 SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ?
@@ -85,11 +92,13 @@ public class FilmDbStorage implements FilmStorage {
 
         saveGenres(film.getId(), film.getGenres());
 
+        log.info("Фильм id={} успешно обновлён", film.getId());
         return getById(film.getId()).orElseThrow();
     }
 
     @Override
     public Optional<Film> getById(Long id) {
+        log.debug("Запрос фильма по id={}", id);
         String sql = """
                 SELECT f.*, m.id AS mpa_id, m.name AS mpa_name
                 FROM films f
@@ -99,6 +108,7 @@ public class FilmDbStorage implements FilmStorage {
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, id);
         if (films.isEmpty()) {
+            log.debug("Фильм с id={} не найден", id);
             return Optional.empty();
         }
 
@@ -106,28 +116,39 @@ public class FilmDbStorage implements FilmStorage {
         loadGenresForFilm(film);
         loadLikesForFilm(film);
 
+        log.debug("Фильм найден: id={}, name={}", film.getId(), film.getName());
         return Optional.of(film);
     }
 
     @Override
     public void addLike(Long filmId, Long userId) {
+        log.info("Добавление лайка: filmId={}, userId={}", filmId, userId);
+
         String checkSql = "SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?";
         Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, filmId, userId);
+
+        log.debug("Проверка лайка: уже существует? count={}", count);
 
         if (count == 0) {
             String insertSql = "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)";
             jdbcTemplate.update(insertSql, filmId, userId);
+            log.info("Лайк добавлен: filmId={}, userId={}", filmId, userId);
+        } else {
+            log.info("Лайк уже существует, пропускаем: filmId={}, userId={}", filmId, userId);
         }
     }
 
     @Override
     public void deleteLike(Long filmId, Long userId) {
+        log.info("Удаление лайка: filmId={}, userId={}", filmId, userId);
         String sql = "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?";
-        jdbcTemplate.update(sql, filmId, userId);
+        int rows = jdbcTemplate.update(sql, filmId, userId);
+        log.debug("Удалено лайков: {}", rows);
     }
 
     @Override
     public List<Film> getPopular(int count) {
+        log.info("Запрос популярных фильмов: count={}", count);
         String sql = """
             SELECT f.*, m.id AS mpa_id, m.name AS mpa_name,
                    COALESCE(COUNT(DISTINCT fl.user_id), 0) AS likes_count
@@ -140,8 +161,9 @@ public class FilmDbStorage implements FilmStorage {
             """;
 
         List<Film> popularFilms = jdbcTemplate.query(sql, this::mapRowToFilm, count);
-        loadGenresAndLikesForFilms(popularFilms);
+        log.debug("Найдено популярных фильмов: {}", popularFilms.size());
 
+        loadGenresAndLikesForFilms(popularFilms);
         return popularFilms;
     }
 
