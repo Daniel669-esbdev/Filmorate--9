@@ -12,14 +12,16 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class MpaDbStorage {
+public class MpaDbStorage implements MpaStorage {
 
     private final JdbcTemplate jdbc;
 
+    @Override
     public List<Mpa> findAll() {
         return jdbc.query("SELECT * FROM mpa ORDER BY id", this::mapRow);
     }
 
+    @Override
     public Optional<Mpa> findById(int id) {
         List<Mpa> result = jdbc.query("SELECT * FROM mpa WHERE id = ?", this::mapRow, id);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));

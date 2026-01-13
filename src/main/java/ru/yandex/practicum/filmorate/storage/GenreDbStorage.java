@@ -12,14 +12,16 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class GenreDbStorage {
+public class GenreDbStorage implements GenreStorage {
 
     private final JdbcTemplate jdbc;
 
+    @Override
     public List<Genre> findAll() {
         return jdbc.query("SELECT * FROM genres ORDER BY id", this::mapRow);
     }
 
+    @Override
     public Optional<Genre> findById(int id) {
         List<Genre> result = jdbc.query("SELECT * FROM genres WHERE id = ?", this::mapRow, id);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));

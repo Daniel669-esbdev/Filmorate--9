@@ -7,8 +7,8 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.GenreDbStorage;
-import ru.yandex.practicum.filmorate.storage.MpaDbStorage;
+import ru.yandex.practicum.filmorate.storage.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.MpaStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.time.LocalDate;
@@ -21,16 +21,16 @@ public class FilmService {
 
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
-    private final MpaDbStorage mpaStorage;
-    private final GenreDbStorage genreStorage;
+    private final MpaStorage mpaStorage;
+    private final GenreStorage genreStorage;
 
     private static final LocalDate EARLIEST_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
     public FilmService(
             FilmStorage filmStorage,
             UserStorage userStorage,
-            MpaDbStorage mpaStorage,
-            GenreDbStorage genreStorage
+            MpaStorage mpaStorage,
+            GenreStorage genreStorage
     ) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
