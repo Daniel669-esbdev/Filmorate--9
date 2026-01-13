@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.stream.Collectors;
 
-@Slf4j
 @RestControllerAdvice
 public class ErrorHandler {
 
@@ -40,7 +39,6 @@ public class ErrorHandler {
     @ExceptionHandler(Throwable.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleThrowable(Throwable e) {
-        log.error("Unhandled exception", e);
         return new ErrorResponse("Произошла непредвиденная ошибка: " + e.getMessage());
     }
 
