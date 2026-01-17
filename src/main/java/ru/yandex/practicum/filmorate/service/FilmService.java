@@ -30,8 +30,7 @@ public class FilmService {
             FilmStorage filmStorage,
             UserStorage userStorage,
             MpaStorage mpaStorage,
-            GenreStorage genreStorage
-    ) {
+            GenreStorage genreStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.mpaStorage = mpaStorage;
@@ -88,12 +87,12 @@ public class FilmService {
         log.info("Лайк удалён: filmId={}, userId={}", filmId, userId);
     }
 
-    public List<Film> getPopular(int count) {
+    public List<Film> getPopular(int count, Integer genreId, Integer year) {
         log.info("Запрос популярных фильмов: count={}", count);
         if (count <= 0) {
             throw new IllegalArgumentException("Параметр count должен быть больше 0");
         }
-        List<Film> films = filmStorage.getPopular(count);
+        List<Film> films = filmStorage.getPopular(count, genreId, year);
         log.debug("Получено популярных фильмов: {}", films.size());
         return films;
     }
