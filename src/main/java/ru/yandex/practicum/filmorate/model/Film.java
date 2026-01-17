@@ -4,8 +4,10 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -29,6 +31,7 @@ public class Film {
     private Mpa mpa;
 
     private Set<Genre> genres = new LinkedHashSet<>();
+    private List<Director> directors = new ArrayList<>();
 
     private Set<Long> likes = new HashSet<>();
 }
