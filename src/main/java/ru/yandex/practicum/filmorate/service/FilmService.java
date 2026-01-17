@@ -30,8 +30,7 @@ public class FilmService {
             FilmStorage filmStorage,
             UserStorage userStorage,
             MpaStorage mpaStorage,
-            GenreStorage genreStorage
-    ) {
+            GenreStorage genreStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.mpaStorage = mpaStorage;
@@ -43,6 +42,24 @@ public class FilmService {
         Collection<Film> films = filmStorage.findAll();
         log.debug("Получено фильмов: {}", films.size());
         return films;
+    }
+
+    public List<Film> getFilmsByDirector(Integer directorId, String sortBy) {
+        List<Film> films = filmStorage.findAllBy(directorId);
+
+        if (sortBy != null) {
+            return films.stream().sorted((f1, f2) -> {
+                if (sortBy.equals("year")) {
+                    return f1.getReleaseDate().isAfter(f2.getReleaseDate()) ? 1 : -1;
+                } else if (sortBy.equals("likes")) {
+                    return f2.getLikes().size() - f1.getLikes().size();
+                }
+                return 0;
+            }).toList();
+        }
+
+        return films;
+
     }
 
     public Film create(Film film) {

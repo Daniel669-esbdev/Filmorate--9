@@ -47,4 +47,9 @@ public class InMemoryFilmStorage implements FilmStorage {
     public List<Film> getPopular(int count) {
         return List.of();
     }
+
+    @Override
+    public List<Film> findAllBy(Integer directorId) {
+        throw new UnsupportedOperationException("Unimplemented method 'findAllBy'");
+    }
 }
