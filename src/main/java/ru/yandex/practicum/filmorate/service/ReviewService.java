@@ -23,10 +23,10 @@ public class ReviewService {
 
     public Review create(Review review) {
         validate(review);
-        checkUserDidNotReviewYet(review.getFilmId(), review.getUserId());
         if (review.getIsPositive() == null) {
             throw new ValidationException("Поле isPositive обязательно");
         }
+        checkUserDidNotReviewYet(review.getFilmId(), review.getUserId());
         return reviewStorage.create(review);
     }
 
