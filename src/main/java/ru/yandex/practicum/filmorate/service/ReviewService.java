@@ -7,9 +7,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Review;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.ReviewStorage;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.List;
 
@@ -19,8 +17,6 @@ import java.util.List;
 public class ReviewService {
 
     private final ReviewStorage reviewStorage;
-    private final FilmStorage filmStorage;
-    private final UserStorage userStorage;
     private final JdbcTemplate jdbcTemplate;
 
     public Review create(Review review) {
@@ -104,6 +100,7 @@ public class ReviewService {
         if (filmId == null) {
             throw new ValidationException("ID фильма не может быть null");
         }
+
         Integer filmCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM films WHERE id = ?",
                 Integer.class,
@@ -112,6 +109,7 @@ public class ReviewService {
         if (filmCount == null || filmCount == 0) {
             throw new ValidationException("Фильм с id = " + filmId + " не найден");
         }
+
         return reviewStorage.findByFilmId(filmId, count != null ? count : 10);
     }
 
@@ -143,6 +141,7 @@ public class ReviewService {
         if (reviewId == null || userId == null) {
             throw new ValidationException("ID отзыва или пользователя не может быть null");
         }
+
         reviewStorage.findById(reviewId)
                 .orElseThrow(() -> new NotFoundException(
                         "Отзыв с id = " + reviewId + " не найден"));
