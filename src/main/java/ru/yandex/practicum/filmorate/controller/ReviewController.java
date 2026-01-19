@@ -9,6 +9,8 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.service.ReviewService;
+import ru.yandex.practicum.filmorate.service.ReviewUpdate;
+
 
 import java.util.List;
 import java.util.Map;
@@ -27,8 +29,8 @@ public class ReviewController {
     }
 
     @PutMapping
-    public Review update(@Valid @RequestBody Review review) {
-        return reviewService.update(review);
+    public Review update(@Valid @RequestBody ReviewUpdate reviewUpdate) {
+        return reviewService.update(reviewUpdate);
     }
 
     @DeleteMapping("/{id}")
@@ -75,8 +77,10 @@ public class ReviewController {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         String paramName = ex.getName() != null ? ex.getName() : "параметр";
-        String message = String.format("Некорректное значение для %s: '%s'. Ожидалось число (Long).",
-                paramName, ex.getValue());
+        String message = String.format(
+                "Некорректное значение для %s: '%s'. Ожидалось число (Long).",
+                paramName, ex.getValue()
+        );
         return Map.of("error", message);
     }
 
@@ -89,17 +93,23 @@ public class ReviewController {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleValidation(MethodArgumentNotValidException ex) {
-        String defaultMessage = ex.getBindingResult().getFieldErrors()
+        String message = ex.getBindingResult().getFieldErrors()
                 .stream()
                 .findFirst()
                 .map(err -> err.getDefaultMessage())
                 .orElse("Ошибка валидации");
-        return Map.of("error", defaultMessage);
+        return Map.of("error", message);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleIllegalArgument(IllegalArgumentException ex) {
+        return Map.of("error", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, String> handleAllExceptions(Exception ex) {
-        return Map.of("error", "Произошла непредвиденная ошибка: " + ex.getMessage());
+        return Map.of("error", "Произошла непредвиденная ошибка");
     }
 }

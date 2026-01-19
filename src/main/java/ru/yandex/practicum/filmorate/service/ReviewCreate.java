@@ -1,20 +1,12 @@
-package ru.yandex.practicum.filmorate.model;
+package ru.yandex.practicum.filmorate.service;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Review {
-
-    private Long id;
+public class ReviewCreate {
 
     @NotNull(message = "filmId обязателен")
     @Positive(message = "filmId должен быть положительным")
@@ -29,10 +21,4 @@ public class Review {
 
     @NotNull(message = "isPositive обязателен")
     private Boolean isPositive;
-
-    private Integer useful;
-
-    private LocalDateTime createdAt;
-
-    private LocalDateTime updatedAt;
 }

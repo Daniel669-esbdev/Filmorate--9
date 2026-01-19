@@ -22,22 +22,39 @@ public class ReviewService {
     private final JdbcTemplate jdbcTemplate;
 
     public Review create(Review review) {
-        validate(review);
-        if (review.getIsPositive() == null) {
-            throw new ValidationException("Поле isPositive обязательно");
+        if (review == null) {
+            throw new ValidationException("Отзыв не может быть null");
         }
+        if (review.getContent() == null || review.getContent().isBlank()) {
+            throw new ValidationException("Содержимое отзыва не может быть пустым");
+        }
+        if (review.getIsPositive() == null) {
+            throw new ValidationException("isPositive обязателен");
+        }
+        if (review.getFilmId() == null || review.getFilmId() <= 0) {
+            throw new ValidationException("filmId обязателен и должен быть положительным");
+        }
+        if (review.getUserId() == null || review.getUserId() <= 0) {
+            throw new ValidationException("userId обязателен и должен быть положительным");
+        }
+
+        filmStorage.getById(review.getFilmId());
+        userStorage.getById(review.getUserId())
+                .orElseThrow(() -> new NotFoundException(
+                        "Пользователь с id = " + review.getUserId() + " не найден"));
+
         checkUserDidNotReviewYet(review.getFilmId(), review.getUserId());
+
         return reviewStorage.create(review);
     }
 
-    public Review update(Review review) {
-        validate(review);
-        if (review.getIsPositive() == null) {
-            throw new ValidationException("Поле isPositive обязательно");
-        }
+    public Review update(ReviewUpdate dto) {
+        Review review = reviewStorage.findById(dto.getId())
+                .orElseThrow(() -> new NotFoundException(
+                        "Отзыв с id = " + dto.getId() + " не найден"));
 
-        reviewStorage.findById(review.getId())
-                .orElseThrow(() -> new NotFoundException("Отзыв с id = " + review.getId() + " не найден"));
+        review.setContent(dto.getContent());
+        review.setIsPositive(dto.getIsPositive());
 
         return reviewStorage.update(review);
     }
@@ -56,7 +73,8 @@ public class ReviewService {
             throw new ValidationException("ID отзыва не может быть null");
         }
         return reviewStorage.findById(id)
-                .orElseThrow(() -> new NotFoundException("Отзыв с id = " + id + " не найден"));
+                .orElseThrow(() -> new NotFoundException(
+                        "Отзыв с id = " + id + " не найден"));
     }
 
     public List<Review> getByFilm(Long filmId, Integer count) {
@@ -91,21 +109,6 @@ public class ReviewService {
         return getById(reviewId);
     }
 
-    private void validate(Review review) {
-        if (review == null) {
-            throw new ValidationException("Отзыв не может быть null");
-        }
-        if (review.getContent() == null || review.getContent().trim().isEmpty()) {
-            throw new ValidationException("Содержимое отзыва не может быть пустым");
-        }
-        if (review.getFilmId() == null || review.getFilmId() <= 0) {
-            throw new ValidationException("filmId обязателен и должен быть положительным");
-        }
-        if (review.getUserId() == null || review.getUserId() <= 0) {
-            throw new ValidationException("userId обязателен и должен быть положительным");
-        }
-    }
-
     private void checkUserDidNotReviewYet(Long filmId, Long userId) {
         String sql = "SELECT COUNT(*) FROM reviews WHERE film_id = ? AND user_id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, filmId, userId);
@@ -118,11 +121,12 @@ public class ReviewService {
         if (reviewId == null || userId == null) {
             throw new ValidationException("ID отзыва или пользователя не может быть null");
         }
-        if (reviewStorage.findById(reviewId).isEmpty()) {
-            throw new NotFoundException("Отзыв с id = " + reviewId + " не найден");
-        }
-        if (userStorage.getById(userId).isEmpty()) {
-            throw new NotFoundException("Пользователь с id = " + userId + " не найден");
-        }
+        reviewStorage.findById(reviewId)
+                .orElseThrow(() -> new NotFoundException(
+                        "Отзыв с id = " + reviewId + " не найден"));
+
+        userStorage.getById(userId)
+                .orElseThrow(() -> new NotFoundException(
+                        "Пользователь с id = " + userId + " не найден"));
     }
 }
