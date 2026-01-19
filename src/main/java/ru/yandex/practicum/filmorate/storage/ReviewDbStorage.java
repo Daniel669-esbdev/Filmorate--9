@@ -27,7 +27,7 @@ public class ReviewDbStorage implements ReviewStorage {
 
         String sql = """
             INSERT INTO reviews (film_id, user_id, content, is_positive, useful, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            VALUES (?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """;
 
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
@@ -38,15 +38,15 @@ public class ReviewDbStorage implements ReviewStorage {
             ps.setLong(2, review.getUserId());
             ps.setString(3, review.getContent());
             ps.setBoolean(4, review.getIsPositive());
-            ps.setInt(5, 0);
             return ps;
         }, keyHolder);
 
         long newId = keyHolder.getKey().longValue();
+
         review.setId(newId);
+        review.setUseful(0);
         review.setCreatedAt(LocalDateTime.now());
         review.setUpdatedAt(LocalDateTime.now());
-        review.setUseful(0);
 
         return review;
     }
@@ -95,7 +95,7 @@ public class ReviewDbStorage implements ReviewStorage {
             SELECT id, film_id, user_id, content, is_positive, useful, created_at, updated_at
             FROM reviews
             WHERE film_id = ?
-            ORDER BY useful DESC, created_at DESC
+            ORDER BY useful DESC, id DESC
             LIMIT ?
             """;
 
@@ -108,10 +108,14 @@ public class ReviewDbStorage implements ReviewStorage {
         validateUserExists(userId);
 
         jdbcTemplate.update("""
-            INSERT INTO review_votes (review_id, user_id, is_like)
-            VALUES (?, ?, true)
-            ON CONFLICT DO NOTHING
-            """, reviewId, userId);
+                DELETE FROM review_votes
+                WHERE review_id = ? AND user_id = ?
+                """, reviewId, userId);
+
+        jdbcTemplate.update("""
+                INSERT INTO review_votes (review_id, user_id, is_like)
+                VALUES (?, ?, true)
+                """, reviewId, userId);
 
         updateUseful(reviewId);
     }
@@ -122,9 +126,9 @@ public class ReviewDbStorage implements ReviewStorage {
         validateUserExists(userId);
 
         jdbcTemplate.update("""
-            DELETE FROM review_votes
-            WHERE review_id = ? AND user_id = ? AND is_like = true
-            """, reviewId, userId);
+                DELETE FROM review_votes
+                WHERE review_id = ? AND user_id = ? AND is_like = true
+                """, reviewId, userId);
 
         updateUseful(reviewId);
     }
@@ -135,10 +139,14 @@ public class ReviewDbStorage implements ReviewStorage {
         validateUserExists(userId);
 
         jdbcTemplate.update("""
-            INSERT INTO review_votes (review_id, user_id, is_like)
-            VALUES (?, ?, false)
-            ON CONFLICT DO NOTHING
-            """, reviewId, userId);
+                DELETE FROM review_votes
+                WHERE review_id = ? AND user_id = ?
+                """, reviewId, userId);
+
+        jdbcTemplate.update("""
+                INSERT INTO review_votes (review_id, user_id, is_like)
+                VALUES (?, ?, false)
+                """, reviewId, userId);
 
         updateUseful(reviewId);
     }
@@ -149,23 +157,23 @@ public class ReviewDbStorage implements ReviewStorage {
         validateUserExists(userId);
 
         jdbcTemplate.update("""
-            DELETE FROM review_votes
-            WHERE review_id = ? AND user_id = ? AND is_like = false
-            """, reviewId, userId);
+                DELETE FROM review_votes
+                WHERE review_id = ? AND user_id = ? AND is_like = false
+                """, reviewId, userId);
 
         updateUseful(reviewId);
     }
 
     private void updateUseful(Long reviewId) {
         jdbcTemplate.update("""
-            UPDATE reviews r
+            UPDATE reviews
             SET useful = (
-                SELECT COALESCE(SUM(CASE WHEN v.is_like THEN 1 ELSE -1 END), 0)
-                FROM review_votes v
-                WHERE v.review_id = r.id
+                SELECT COALESCE(SUM(CASE WHEN is_like THEN 1 ELSE -1 END), 0)
+                FROM review_votes
+                WHERE review_id = ?
             )
-            WHERE r.id = ?
-            """, reviewId);
+            WHERE id = ?
+            """, reviewId, reviewId);
     }
 
     private void validateUserExists(Long userId) {
@@ -208,9 +216,9 @@ public class ReviewDbStorage implements ReviewStorage {
         review.setIsPositive(rs.getBoolean("is_positive"));
         review.setUseful(rs.getInt("useful"));
         review.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-        review.setUpdatedAt(rs.getTimestamp("updated_at") != null
-                ? rs.getTimestamp("updated_at").toLocalDateTime()
-                : null);
+        if (rs.getTimestamp("updated_at") != null) {
+            review.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+        }
         return review;
     }
 }

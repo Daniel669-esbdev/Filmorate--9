@@ -11,7 +11,6 @@ import ru.yandex.practicum.filmorate.storage.ReviewStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 import lombok.extern.slf4j.Slf4j;
 
-
 import java.util.List;
 
 @Slf4j
@@ -41,10 +40,12 @@ public class ReviewService {
             throw new ValidationException("userId обязателен и должен быть положительным");
         }
 
-        filmStorage.getById(review.getFilmId());
-        userStorage.getById(review.getUserId())
-                .orElseThrow(() -> new NotFoundException(
-                        "Пользователь с id = " + review.getUserId() + " не найден"));
+        if (filmStorage.getById(review.getFilmId()) == null) {
+            throw new ValidationException("Фильм с id = " + review.getFilmId() + " не найден");
+        }
+        if (userStorage.getById(review.getUserId()).isEmpty()) {
+            throw new ValidationException("Пользователь с id = " + review.getUserId() + " не найден");
+        }
 
         checkUserDidNotReviewYet(review.getFilmId(), review.getUserId());
 

@@ -56,39 +56,33 @@ public class ReviewController {
     @PutMapping("/{id}/like/{userId}")
     public Review addLike(
             @PathVariable Long id,
-            @PathVariable Long userId,
-            @RequestBody(required = false) Object ignoredBody) {
-        log.info("PUT /reviews/{}/like/{} with body: {}", id, userId, ignoredBody);
+            @PathVariable Long userId) {
+        log.info("PUT /reviews/{}/like/{}", id, userId);
         return reviewService.addLike(id, userId);
     }
 
     @DeleteMapping("/{id}/like/{userId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeLike(
+    public Review removeLike(
             @PathVariable Long id,
-            @PathVariable Long userId,
-            @RequestBody(required = false) Object ignoredBody) {
-        log.info("DELETE /reviews/{}/like/{} with body: {}", id, userId, ignoredBody);
-        reviewService.removeLike(id, userId);
+            @PathVariable Long userId) {
+        log.info("DELETE /reviews/{}/like/{}", id, userId);
+        return reviewService.removeLike(id, userId);
     }
 
     @PutMapping("/{id}/dislike/{userId}")
     public Review addDislike(
             @PathVariable Long id,
-            @PathVariable Long userId,
-            @RequestBody(required = false) Object ignoredBody) {
-        log.info("PUT /reviews/{}/dislike/{} with body: {}", id, userId, ignoredBody);
+            @PathVariable Long userId) {
+        log.info("PUT /reviews/{}/dislike/{}", id, userId);
         return reviewService.addDislike(id, userId);
     }
 
     @DeleteMapping("/{id}/dislike/{userId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeDislike(
+    public Review removeDislike(
             @PathVariable Long id,
-            @PathVariable Long userId,
-            @RequestBody(required = false) Object ignoredBody) {
-        log.info("DELETE /reviews/{}/dislike/{} with body: {}", id, userId, ignoredBody);
-        reviewService.removeDislike(id, userId);
+            @PathVariable Long userId) {
+        log.info("DELETE /reviews/{}/dislike/{}", id, userId);
+        return reviewService.removeDislike(id, userId);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
