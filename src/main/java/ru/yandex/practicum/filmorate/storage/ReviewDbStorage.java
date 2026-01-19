@@ -22,6 +22,9 @@ public class ReviewDbStorage implements ReviewStorage {
 
     @Override
     public Review create(Review review) {
+        validateUserExists(review.getUserId());
+        validateFilmExists(review.getFilmId());
+
         String sql = """
             INSERT INTO reviews (film_id, user_id, content, is_positive, useful, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -165,13 +168,35 @@ public class ReviewDbStorage implements ReviewStorage {
             """, reviewId);
     }
 
-    private void validateReviewExists(Long reviewId) {
-        if (findById(reviewId).isEmpty()) {
-            throw new NotFoundException("Отзыв с id = " + reviewId + " не найден");
+    private void validateUserExists(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId не может быть null");
+        }
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM users WHERE id = ?", Integer.class, userId);
+        if (count == null || count == 0) {
+            throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
     }
 
-    private void validateUserExists(Long userId) {
+    private void validateFilmExists(Long filmId) {
+        if (filmId == null) {
+            throw new IllegalArgumentException("filmId не может быть null");
+        }
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM films WHERE id = ?", Integer.class, filmId);
+        if (count == null || count == 0) {
+            throw new NotFoundException("Фильм с id = " + filmId + " не найден");
+        }
+    }
+
+    private void validateReviewExists(Long reviewId) {
+        if (reviewId == null) {
+            throw new IllegalArgumentException("reviewId не может быть null");
+        }
+        if (findById(reviewId).isEmpty()) {
+            throw new NotFoundException("Отзыв с id = " + reviewId + " не найден");
+        }
     }
 
     private Review mapRowToReview(ResultSet rs, int rowNum) throws SQLException {
