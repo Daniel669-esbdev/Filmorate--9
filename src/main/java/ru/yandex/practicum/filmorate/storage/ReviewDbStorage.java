@@ -104,16 +104,8 @@ public class ReviewDbStorage implements ReviewStorage {
         validateReviewExists(reviewId);
         validateUserExists(userId);
 
-        jdbcTemplate.update("""
-                DELETE FROM review_votes
-                WHERE review_id = ? AND user_id = ?
-                """, reviewId, userId);
-
-        jdbcTemplate.update("""
-                INSERT INTO review_votes (review_id, user_id, is_like)
-                VALUES (?, ?, true)
-                """, reviewId, userId);
-
+        jdbcTemplate.update("DELETE FROM review_votes WHERE review_id = ? AND user_id = ?", reviewId, userId);
+        jdbcTemplate.update("INSERT INTO review_votes (review_id, user_id, is_like) VALUES (?, ?, true)", reviewId, userId);
         updateUseful(reviewId);
     }
 
@@ -122,11 +114,7 @@ public class ReviewDbStorage implements ReviewStorage {
         validateReviewExists(reviewId);
         validateUserExists(userId);
 
-        jdbcTemplate.update("""
-                DELETE FROM review_votes
-                WHERE review_id = ? AND user_id = ? AND is_like = true
-                """, reviewId, userId);
-
+        jdbcTemplate.update("DELETE FROM review_votes WHERE review_id = ? AND user_id = ? AND is_like = true", reviewId, userId);
         updateUseful(reviewId);
     }
 
@@ -135,16 +123,8 @@ public class ReviewDbStorage implements ReviewStorage {
         validateReviewExists(reviewId);
         validateUserExists(userId);
 
-        jdbcTemplate.update("""
-                DELETE FROM review_votes
-                WHERE review_id = ? AND user_id = ?
-                """, reviewId, userId);
-
-        jdbcTemplate.update("""
-                INSERT INTO review_votes (review_id, user_id, is_like)
-                VALUES (?, ?, false)
-                """, reviewId, userId);
-
+        jdbcTemplate.update("DELETE FROM review_votes WHERE review_id = ? AND user_id = ?", reviewId, userId);
+        jdbcTemplate.update("INSERT INTO review_votes (review_id, user_id, is_like) VALUES (?, ?, false)", reviewId, userId);
         updateUseful(reviewId);
     }
 
@@ -153,11 +133,7 @@ public class ReviewDbStorage implements ReviewStorage {
         validateReviewExists(reviewId);
         validateUserExists(userId);
 
-        jdbcTemplate.update("""
-                DELETE FROM review_votes
-                WHERE review_id = ? AND user_id = ? AND is_like = false
-                """, reviewId, userId);
-
+        jdbcTemplate.update("DELETE FROM review_votes WHERE review_id = ? AND user_id = ? AND is_like = false", reviewId, userId);
         updateUseful(reviewId);
     }
 
