@@ -22,7 +22,6 @@ public class ReviewDbStorage implements ReviewStorage {
 
     @Override
     public Review create(Review review) {
-
         String sql = """
             INSERT INTO reviews (film_id, user_id, content, is_positive, useful, created_at, updated_at)
             VALUES (?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)

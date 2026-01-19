@@ -40,48 +40,41 @@ public class ReviewService {
             throw new ValidationException("userId обязателен и должен быть положительным");
         }
 
-        try {
-            Integer filmCount = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM films WHERE id = ?",
-                    Integer.class,
-                    review.getFilmId()
-            );
-            if (filmCount == null || filmCount == 0) {
-                throw new ValidationException("Фильм с id = " + review.getFilmId() + " не найден");
-            }
-
-            Integer userCount = jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM users WHERE id = ?",
-                    Integer.class,
-                    review.getUserId()
-            );
-            if (userCount == null || userCount == 0) {
-                throw new ValidationException("Пользователь с id = " + review.getUserId() + " не найден");
-            }
-
-            String sql = "SELECT COUNT(*) FROM reviews WHERE film_id = ? AND user_id = ?";
-            Integer count = jdbcTemplate.queryForObject(
-                    sql,
-                    Integer.class,
-                    review.getFilmId(),
-                    review.getUserId()
-            );
-            if (count != null && count > 0) {
-                throw new ValidationException("Пользователь уже оставил отзыв на этот фильм");
-            }
-
-            return reviewStorage.create(review);
-
-        } catch (NotFoundException e) {
-            throw new ValidationException(e.getMessage());
+        Integer filmCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM films WHERE id = ?",
+                Integer.class,
+                review.getFilmId()
+        );
+        if (filmCount == null || filmCount == 0) {
+            throw new ValidationException("Фильм с id = " + review.getFilmId() + " не найден");
         }
+
+        Integer userCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM users WHERE id = ?",
+                Integer.class,
+                review.getUserId()
+        );
+        if (userCount == null || userCount == 0) {
+            throw new ValidationException("Пользователь с id = " + review.getUserId() + " не найден");
+        }
+
+        Integer existingReview = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM reviews WHERE film_id = ? AND user_id = ?",
+                Integer.class,
+                review.getFilmId(),
+                review.getUserId()
+        );
+        if (existingReview != null && existingReview > 0) {
+            throw new ValidationException("Пользователь уже оставил отзыв на этот фильм");
+        }
+
+        return reviewStorage.create(review);
     }
 
     public Review update(ReviewUpdate reviewUpdate) {
         Review existing = reviewStorage.findById(reviewUpdate.getId())
-                .orElseThrow(() ->
-                        new NotFoundException("Отзыв с id = " + reviewUpdate.getId() + " не найден")
-                );
+                .orElseThrow(() -> new NotFoundException(
+                        "Отзыв с id = " + reviewUpdate.getId() + " не найден"));
 
         existing.setContent(reviewUpdate.getContent());
         existing.setIsPositive(reviewUpdate.getIsPositive());
@@ -103,9 +96,8 @@ public class ReviewService {
             throw new ValidationException("ID отзыва не может быть null");
         }
         return reviewStorage.findById(id)
-                .orElseThrow(() ->
-                        new NotFoundException("Отзыв с id = " + id + " не найден")
-                );
+                .orElseThrow(() -> new NotFoundException(
+                        "Отзыв с id = " + id + " не найден"));
     }
 
     public List<Review> getByFilm(Long filmId, Integer count) {
@@ -155,9 +147,8 @@ public class ReviewService {
         }
 
         reviewStorage.findById(reviewId)
-                .orElseThrow(() ->
-                        new NotFoundException("Отзыв с id = " + reviewId + " не найден")
-                );
+                .orElseThrow(() -> new NotFoundException(
+                        "Отзыв с id = " + reviewId + " не найден"));
 
         Integer userCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM users WHERE id = ?",
