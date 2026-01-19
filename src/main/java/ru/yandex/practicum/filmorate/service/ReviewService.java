@@ -55,13 +55,13 @@ public class ReviewService {
         return reviewStorage.create(review);
     }
 
-    public Review update(Review review) {
-        Review existing = reviewStorage.findById(review.getId())
+    public Review update(ReviewUpdate reviewUpdate) {
+        Review existing = reviewStorage.findById(reviewUpdate.getId())
                 .orElseThrow(() -> new NotFoundException(
-                        "Отзыв с id = " + review.getId() + " не найден"));
+                        "Отзыв с id = " + reviewUpdate.getId() + " не найден"));
 
-        existing.setContent(review.getContent());
-        existing.setIsPositive(review.getIsPositive());
+        existing.setContent(reviewUpdate.getContent());
+        existing.setIsPositive(reviewUpdate.getIsPositive());
 
         return reviewStorage.update(existing);
     }
