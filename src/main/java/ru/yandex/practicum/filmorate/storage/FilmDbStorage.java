@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.storage;
 
 import lombok.extern.slf4j.Slf4j;
+import org.h2.jdbc.JdbcDatabaseMetaData;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -116,6 +117,18 @@ public class FilmDbStorage implements FilmStorage {
 
         log.debug("Фильм найден: id={}, name={}", film.getId(), film.getName());
         return Optional.of(film);
+    }
+
+    @Override
+    public void deleteFilm(Long id) {
+        log.debug("Запрос на удаление фильма из БД, id = {}", id);
+
+        int rows = jdbcTemplate.update("DELETE FROM films WHERE id = ?", id);
+
+        if (rows == 0) {
+            throw new NotFoundException("Фильм с id '" + id + "' не найден");
+        }
+        log.debug("Строк из films удалено: {}", rows);
     }
 
     @Override

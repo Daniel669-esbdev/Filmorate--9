@@ -72,6 +72,12 @@ public class FilmService {
         return film;
     }
 
+    public void deleteFilm(Long id) {
+        log.debug("Запрос на удаление фильма по id = {}", id);
+        filmStorage.deleteFilm(id);
+        log.debug("Фильм с id = {} успешно удалён", id);
+    }
+
     public void addLike(Long filmId, Long userId) {
         log.info("Добавление лайка: filmId={}, userId={}", filmId, userId);
         getById(filmId);

@@ -36,6 +36,11 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
+    public void deleteFilm(Long id) {
+    }
+
+
+    @Override
     public void addLike(Long filmId, Long userId) {
     }
 
