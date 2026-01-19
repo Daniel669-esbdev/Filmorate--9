@@ -22,8 +22,6 @@ public class ReviewDbStorage implements ReviewStorage {
 
     @Override
     public Review create(Review review) {
-        validateUserExists(review.getUserId());
-        validateFilmExists(review.getFilmId());
 
         String sql = """
             INSERT INTO reviews (film_id, user_id, content, is_positive, useful, created_at, updated_at)
