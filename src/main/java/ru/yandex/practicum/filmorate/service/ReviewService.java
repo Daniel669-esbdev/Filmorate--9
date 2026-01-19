@@ -40,13 +40,13 @@ public class ReviewService {
             throw new ValidationException("userId обязателен и должен быть положительным");
         }
 
-        try {
-            filmStorage.getById(review.getFilmId());
-        } catch (NotFoundException e) {
+        Integer filmCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM films WHERE id = ?", Integer.class, review.getFilmId());
+        if (filmCount == null || filmCount == 0) {
             throw new ValidationException("Фильм с id = " + review.getFilmId() + " не найден");
         }
 
-        if (userStorage.getById(review.getUserId()).isEmpty()) {
+        Integer userCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE id = ?", Integer.class, review.getUserId());
+        if (userCount == null || userCount == 0) {
             throw new ValidationException("Пользователь с id = " + review.getUserId() + " не найден");
         }
 
@@ -55,15 +55,15 @@ public class ReviewService {
         return reviewStorage.create(review);
     }
 
-    public Review update(ReviewUpdate dto) {
-        Review review = reviewStorage.findById(dto.getId())
+    public Review update(Review review) {
+        Review existing = reviewStorage.findById(review.getId())
                 .orElseThrow(() -> new NotFoundException(
-                        "Отзыв с id = " + dto.getId() + " не найден"));
+                        "Отзыв с id = " + review.getId() + " не найден"));
 
-        review.setContent(dto.getContent());
-        review.setIsPositive(dto.getIsPositive());
+        existing.setContent(review.getContent());
+        existing.setIsPositive(review.getIsPositive());
 
-        return reviewStorage.update(review);
+        return reviewStorage.update(existing);
     }
 
     public void delete(Long reviewId) {
@@ -88,9 +88,8 @@ public class ReviewService {
         if (filmId == null) {
             throw new ValidationException("ID фильма не может быть null");
         }
-        try {
-            filmStorage.getById(filmId);
-        } catch (NotFoundException e) {
+        Integer filmCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM films WHERE id = ?", Integer.class, filmId);
+        if (filmCount == null || filmCount == 0) {
             throw new ValidationException("Фильм с id = " + filmId + " не найден");
         }
         return reviewStorage.findByFilmId(filmId, count != null ? count : 10);
@@ -136,7 +135,8 @@ public class ReviewService {
                 .orElseThrow(() -> new NotFoundException(
                         "Отзыв с id = " + reviewId + " не найден"));
 
-        if (userStorage.getById(userId).isEmpty()) {
+        Integer userCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE id = ?", Integer.class, userId);
+        if (userCount == null || userCount == 0) {
             throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
     }
