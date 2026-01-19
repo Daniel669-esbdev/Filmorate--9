@@ -63,14 +63,9 @@ public class ReviewService {
     }
 
     public List<Review> getByFilm(Long filmId, Integer count) {
-        if (filmId == null || filmId == 0) {
-            return reviewStorage.findByFilmId(null, count != null ? count : 10);
-        }
-
-        if (!isFilmExists(filmId)) {
+        if (filmId != null && filmId != 0 && !isFilmExists(filmId)) {
             throw new NotFoundException("Фильм с id = " + filmId + " не найден");
         }
-
         return reviewStorage.findByFilmId(filmId, count != null ? count : 10);
     }
 
@@ -120,7 +115,7 @@ public class ReviewService {
             throw new ValidationException("Содержимое отзыва не может быть пустым");
         }
         if (review.getIsPositive() == null) {
-            throw new ValidationException("Флаг isPositive обязателен");
+            throw new ValidationException("isPositive обязателен");
         }
         if (review.getFilmId() == null) {
             throw new ValidationException("filmId обязателен");
