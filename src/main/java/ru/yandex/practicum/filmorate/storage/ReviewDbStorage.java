@@ -23,8 +23,8 @@ public class ReviewDbStorage implements ReviewStorage {
     @Override
     public Review create(Review review) {
         String sql = """
-        INSERT INTO reviews (film_id, user_id, content, is_positive, useful, created_at, updated_at)
-        VALUES (?, ?, ?, ?,  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        INSERT INTO reviews (film_id, user_id, content, is_positive, created_at, updated_at)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         """;
 
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
@@ -38,7 +38,8 @@ public class ReviewDbStorage implements ReviewStorage {
             return ps;
         }, keyHolder);
 
-        review.setId(keyHolder.getKey().longValue());
+        long newId = keyHolder.getKey().longValue();
+        review.setId(newId);
         review.setCreatedAt(LocalDateTime.now());
         review.setUpdatedAt(LocalDateTime.now());
         review.setUseful(0);
