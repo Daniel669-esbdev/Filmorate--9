@@ -26,6 +26,12 @@ public class Review {
     @Size(max = 2000, message = "Отзыв не может быть длиннее 2000 символов")
     private String content;
 
+    @NotNull(message = "isPositive обязателен")
+    private Boolean isPositive;
+
+    private Integer useful = 0;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
 }

@@ -23,8 +23,8 @@ public class ReviewDbStorage implements ReviewStorage {
     @Override
     public Review create(Review review) {
         String sql = """
-            INSERT INTO reviews (film_id, user_id, content, created_at, updated_at)
-            VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            INSERT INTO reviews (film_id, user_id, content, is_positive, useful, created_at, updated_at)
+            VALUES (?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """;
 
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
@@ -34,12 +34,14 @@ public class ReviewDbStorage implements ReviewStorage {
             ps.setLong(1, review.getFilmId());
             ps.setLong(2, review.getUserId());
             ps.setString(3, review.getContent());
+            ps.setBoolean(4, review.getIsPositive());
             return ps;
         }, keyHolder);
 
         review.setId(keyHolder.getKey().longValue());
         review.setCreatedAt(LocalDateTime.now());
         review.setUpdatedAt(LocalDateTime.now());
+        review.setUseful(0);
 
         return review;
     }
@@ -48,12 +50,13 @@ public class ReviewDbStorage implements ReviewStorage {
     public Review update(Review review) {
         String sql = """
             UPDATE reviews
-            SET content = ?, updated_at = CURRENT_TIMESTAMP
+            SET content = ?, is_positive = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """;
 
         int updated = jdbcTemplate.update(sql,
                 review.getContent(),
+                review.getIsPositive(),
                 review.getId());
 
         if (updated == 0) {
@@ -73,7 +76,7 @@ public class ReviewDbStorage implements ReviewStorage {
     @Override
     public Optional<Review> findById(Long id) {
         String sql = """
-            SELECT id, film_id, user_id, content, created_at, updated_at
+            SELECT id, film_id, user_id, content, is_positive, useful, created_at, updated_at
             FROM reviews WHERE id = ?
             """;
 
@@ -84,14 +87,89 @@ public class ReviewDbStorage implements ReviewStorage {
     @Override
     public List<Review> findByFilmId(Long filmId, Integer count) {
         String sql = """
-            SELECT id, film_id, user_id, content, created_at, updated_at
+            SELECT id, film_id, user_id, content, is_positive, useful, created_at, updated_at
             FROM reviews
             WHERE film_id = ?
-            ORDER BY created_at DESC
+            ORDER BY useful DESC, created_at DESC
             LIMIT ?
             """;
 
         return jdbcTemplate.query(sql, this::mapRowToReview, filmId, count);
+    }
+
+    @Override
+    public void addLike(Long reviewId, Long userId) {
+        validateReviewExists(reviewId);
+        validateUserExists(userId);
+
+        jdbcTemplate.update("""
+            INSERT INTO review_votes (review_id, user_id, is_like)
+            VALUES (?, ?, true)
+            ON CONFLICT DO NOTHING
+            """, reviewId, userId);
+
+        updateUseful(reviewId);
+    }
+
+    @Override
+    public void removeLike(Long reviewId, Long userId) {
+        validateReviewExists(reviewId);
+        validateUserExists(userId);
+
+        jdbcTemplate.update("""
+            DELETE FROM review_votes
+            WHERE review_id = ? AND user_id = ? AND is_like = true
+            """, reviewId, userId);
+
+        updateUseful(reviewId);
+    }
+
+    @Override
+    public void addDislike(Long reviewId, Long userId) {
+        validateReviewExists(reviewId);
+        validateUserExists(userId);
+
+        jdbcTemplate.update("""
+            INSERT INTO review_votes (review_id, user_id, is_like)
+            VALUES (?, ?, false)
+            ON CONFLICT DO NOTHING
+            """, reviewId, userId);
+
+        updateUseful(reviewId);
+    }
+
+    @Override
+    public void removeDislike(Long reviewId, Long userId) {
+        validateReviewExists(reviewId);
+        validateUserExists(userId);
+
+        jdbcTemplate.update("""
+            DELETE FROM review_votes
+            WHERE review_id = ? AND user_id = ? AND is_like = false
+            """, reviewId, userId);
+
+        updateUseful(reviewId);
+    }
+
+    private void updateUseful(Long reviewId) {
+        jdbcTemplate.update("""
+            UPDATE reviews r
+            SET useful = (
+                SELECT COALESCE(SUM(CASE WHEN v.is_like THEN 1 ELSE -1 END), 0)
+                FROM review_votes v
+                WHERE v.review_id = r.id
+            )
+            WHERE r.id = ?
+            """, reviewId);
+    }
+
+    private void validateReviewExists(Long reviewId) {
+        if (findById(reviewId).isEmpty()) {
+            throw new NotFoundException("Отзыв с id = " + reviewId + " не найден");
+        }
+    }
+
+    private void validateUserExists(Long userId) {
     }
 
     private Review mapRowToReview(ResultSet rs, int rowNum) throws SQLException {
@@ -100,6 +178,8 @@ public class ReviewDbStorage implements ReviewStorage {
         review.setFilmId(rs.getLong("film_id"));
         review.setUserId(rs.getLong("user_id"));
         review.setContent(rs.getString("content"));
+        review.setIsPositive(rs.getBoolean("is_positive"));
+        review.setUseful(rs.getInt("useful"));
         review.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
         review.setUpdatedAt(rs.getTimestamp("updated_at") != null
                 ? rs.getTimestamp("updated_at").toLocalDateTime()

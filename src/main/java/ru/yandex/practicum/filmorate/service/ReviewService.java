@@ -24,6 +24,9 @@ public class ReviewService {
     public Review create(Review review) {
         validate(review);
         checkUserDidNotReviewYet(review.getFilmId(), review.getUserId());
+        if (review.getIsPositive() == null) {
+            throw new ValidationException("Поле isPositive обязательно");
+        }
         return reviewStorage.create(review);
     }
 
@@ -31,6 +34,11 @@ public class ReviewService {
         validate(review);
         Review existing = reviewStorage.findById(review.getId())
                 .orElseThrow(() -> new NotFoundException("Отзыв не найден"));
+
+        if (review.getIsPositive() == null) {
+            throw new ValidationException("Поле isPositive обязательно");
+        }
+
         return reviewStorage.update(review);
     }
 
@@ -50,6 +58,30 @@ public class ReviewService {
         return reviewStorage.findByFilmId(filmId, count != null ? count : 10);
     }
 
+    public Review addLike(Long reviewId, Long userId) {
+        validateReviewAndUser(reviewId, userId);
+        reviewStorage.addLike(reviewId, userId);
+        return getById(reviewId);
+    }
+
+    public Review removeLike(Long reviewId, Long userId) {
+        validateReviewAndUser(reviewId, userId);
+        reviewStorage.removeLike(reviewId, userId);
+        return getById(reviewId);
+    }
+
+    public Review addDislike(Long reviewId, Long userId) {
+        validateReviewAndUser(reviewId, userId);
+        reviewStorage.addDislike(reviewId, userId);
+        return getById(reviewId);
+    }
+
+    public Review removeDislike(Long reviewId, Long userId) {
+        validateReviewAndUser(reviewId, userId);
+        reviewStorage.removeDislike(reviewId, userId);
+        return getById(reviewId);
+    }
+
     private void validate(Review review) {
         if (review.getContent() == null || review.getContent().trim().isEmpty()) {
             throw new ValidationException("Содержимое отзыва не может быть пустым");
@@ -61,6 +93,15 @@ public class ReviewService {
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, filmId, userId);
         if (count != null && count > 0) {
             throw new ValidationException("Вы уже оставляли отзыв к этому фильму");
+        }
+    }
+
+    private void validateReviewAndUser(Long reviewId, Long userId) {
+        if (reviewStorage.findById(reviewId).isEmpty()) {
+            throw new NotFoundException("Отзыв не найден");
+        }
+        if (userStorage.getById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь не найден");
         }
     }
 }

@@ -55,8 +55,19 @@ CREATE TABLE IF NOT EXISTS reviews (
     film_id BIGINT NOT NULL REFERENCES films(id) ON DELETE CASCADE,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
+    is_positive BOOLEAN NOT NULL DEFAULT TRUE,
+    useful      INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP
+    );
+
+CREATE TABLE IF NOT EXISTS review_votes (
+    review_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    is_like BOOLEAN NOT NULL,
+    PRIMARY KEY (review_id, user_id),
+    CONSTRAINT fk_review_votes_review FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE,
+    CONSTRAINT fk_review_votes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
 MERGE INTO mpa (id, name) VALUES
