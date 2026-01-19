@@ -58,13 +58,13 @@ public class ReviewService {
             throw new ValidationException("Пользователь с id = " + review.getUserId() + " не найден");
         }
 
-        Integer existingReview = jdbcTemplate.queryForObject(
+        Integer existing = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM reviews WHERE film_id = ? AND user_id = ?",
                 Integer.class,
                 review.getFilmId(),
                 review.getUserId()
         );
-        if (existingReview != null && existingReview > 0) {
+        if (existing != null && existing > 0) {
             throw new ValidationException("Пользователь уже оставил отзыв на этот фильм");
         }
 
@@ -104,7 +104,6 @@ public class ReviewService {
         if (filmId == null) {
             throw new ValidationException("ID фильма не может быть null");
         }
-
         Integer filmCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM films WHERE id = ?",
                 Integer.class,
@@ -113,7 +112,6 @@ public class ReviewService {
         if (filmCount == null || filmCount == 0) {
             throw new ValidationException("Фильм с id = " + filmId + " не найден");
         }
-
         return reviewStorage.findByFilmId(filmId, count != null ? count : 10);
     }
 
@@ -145,7 +143,6 @@ public class ReviewService {
         if (reviewId == null || userId == null) {
             throw new ValidationException("ID отзыва или пользователя не может быть null");
         }
-
         reviewStorage.findById(reviewId)
                 .orElseThrow(() -> new NotFoundException(
                         "Отзыв с id = " + reviewId + " не найден"));
