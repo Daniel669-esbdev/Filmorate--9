@@ -32,33 +32,38 @@ public class ReviewService {
 
     public Review update(Review review) {
         validate(review);
-        reviewStorage.findById(review.getId())
-                .orElseThrow(() -> new NotFoundException("Отзыв не найден"));
-
         if (review.getIsPositive() == null) {
             throw new ValidationException("Поле isPositive обязательно");
         }
+
+        reviewStorage.findById(review.getId())
+                .orElseThrow(() -> new NotFoundException("Отзыв с id = " + review.getId() + " не найден"));
 
         return reviewStorage.update(review);
     }
 
     public void delete(Long reviewId) {
+        if (reviewId == null) {
+            throw new ValidationException("ID отзыва не может быть null");
+        }
         if (!reviewStorage.delete(reviewId)) {
             throw new NotFoundException("Отзыв с id = " + reviewId + " не найден");
         }
     }
 
     public Review getById(Long id) {
+        if (id == null) {
+            throw new ValidationException("ID отзыва не может быть null");
+        }
         return reviewStorage.findById(id)
-                .orElseGet(() -> {
-                    Review emptyReview = new Review();
-                    emptyReview.setId(id);
-                    return emptyReview;
-                });
+                .orElseThrow(() -> new NotFoundException("Отзыв с id = " + id + " не найден"));
     }
 
     public List<Review> getByFilm(Long filmId, Integer count) {
-        filmStorage.getById(filmId);  // проверка существования фильма
+        if (filmId == null) {
+            throw new ValidationException("ID фильма не может быть null");
+        }
+        filmStorage.getById(filmId);
         return reviewStorage.findByFilmId(filmId, count != null ? count : 10);
     }
 
@@ -87,8 +92,17 @@ public class ReviewService {
     }
 
     private void validate(Review review) {
+        if (review == null) {
+            throw new ValidationException("Отзыв не может быть null");
+        }
         if (review.getContent() == null || review.getContent().trim().isEmpty()) {
             throw new ValidationException("Содержимое отзыва не может быть пустым");
+        }
+        if (review.getFilmId() == null || review.getFilmId() <= 0) {
+            throw new ValidationException("filmId обязателен и должен быть положительным");
+        }
+        if (review.getUserId() == null || review.getUserId() <= 0) {
+            throw new ValidationException("userId обязателен и должен быть положительным");
         }
     }
 
@@ -96,16 +110,19 @@ public class ReviewService {
         String sql = "SELECT COUNT(*) FROM reviews WHERE film_id = ? AND user_id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, filmId, userId);
         if (count != null && count > 0) {
-            throw new ValidationException("Вы уже оставляли отзыв к этому фильму");
+            throw new ValidationException("Пользователь уже оставил отзыв на этот фильм");
         }
     }
 
     private void validateReviewAndUser(Long reviewId, Long userId) {
+        if (reviewId == null || userId == null) {
+            throw new ValidationException("ID отзыва или пользователя не может быть null");
+        }
         if (reviewStorage.findById(reviewId).isEmpty()) {
-            throw new NotFoundException("Отзыв не найден");
+            throw new NotFoundException("Отзыв с id = " + reviewId + " не найден");
         }
         if (userStorage.getById(userId).isEmpty()) {
-            throw new NotFoundException("Пользователь не найден");
+            throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
     }
 }
