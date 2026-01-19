@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS users (
     );
 
 CREATE TABLE IF NOT EXISTS mpa (
-    id   INTEGER PRIMARY KEY,
-    name VARCHAR(50) NOT NULL
+     id   INTEGER PRIMARY KEY,
+     name VARCHAR(50) NOT NULL
     );
 
 CREATE TABLE IF NOT EXISTS genres (
@@ -84,15 +84,17 @@ CREATE TABLE IF NOT EXISTS review_votes (
     PRIMARY KEY (review_id, user_id)
     );
 
-INSERT INTO mpa (id, name) SELECT 1, 'G' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM mpa WHERE id = 1);
-INSERT INTO mpa (id, name) SELECT 2, 'PG' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM mpa WHERE id = 2);
-INSERT INTO mpa (id, name) SELECT 3, 'PG-13' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM mpa WHERE id = 3);
-INSERT INTO mpa (id, name) SELECT 4, 'R' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM mpa WHERE id = 4);
-INSERT INTO mpa (id, name) SELECT 5, 'NC-17' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM mpa WHERE id = 5);
+MERGE INTO mpa KEY(id) VALUES
+    (1, 'G'),
+    (2, 'PG'),
+    (3, 'PG-13'),
+    (4, 'R'),
+    (5, 'NC-17');
 
-INSERT INTO genres (id, name) SELECT 1, 'Комедия' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM genres WHERE id = 1);
-INSERT INTO genres (id, name) SELECT 2, 'Драма' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM genres WHERE id = 2);
-INSERT INTO genres (id, name) SELECT 3, 'Мультфильм' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM genres WHERE id = 3);
-INSERT INTO genres (id, name) SELECT 4, 'Триллер' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM genres WHERE id = 4);
-INSERT INTO genres (id, name) SELECT 5, 'Документальный' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM genres WHERE id = 5);
-INSERT INTO genres (id, name) SELECT 6, 'Боевик' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM genres WHERE id = 6);
+MERGE INTO genres KEY(id) VALUES
+    (1, 'Комедия'),
+    (2, 'Драма'),
+    (3, 'Мультфильм'),
+    (4, 'Триллер'),
+    (5, 'Документальный'),
+    (6, 'Боевик');
