@@ -40,9 +40,12 @@ public class ReviewService {
             throw new ValidationException("userId обязателен и должен быть положительным");
         }
 
-        if (filmStorage.getById(review.getFilmId()) == null) {
+        try {
+            filmStorage.getById(review.getFilmId());
+        } catch (NotFoundException e) {
             throw new ValidationException("Фильм с id = " + review.getFilmId() + " не найден");
         }
+
         if (userStorage.getById(review.getUserId()).isEmpty()) {
             throw new ValidationException("Пользователь с id = " + review.getUserId() + " не найден");
         }
@@ -85,7 +88,11 @@ public class ReviewService {
         if (filmId == null) {
             throw new ValidationException("ID фильма не может быть null");
         }
-        filmStorage.getById(filmId);
+        try {
+            filmStorage.getById(filmId);
+        } catch (NotFoundException e) {
+            throw new ValidationException("Фильм с id = " + filmId + " не найден");
+        }
         return reviewStorage.findByFilmId(filmId, count != null ? count : 10);
     }
 
@@ -129,8 +136,8 @@ public class ReviewService {
                 .orElseThrow(() -> new NotFoundException(
                         "Отзыв с id = " + reviewId + " не найден"));
 
-        userStorage.getById(userId)
-                .orElseThrow(() -> new NotFoundException(
-                        "Пользователь с id = " + userId + " не найден"));
+        if (userStorage.getById(userId).isEmpty()) {
+            throw new NotFoundException("Пользователь с id = " + userId + " не найден");
+        }
     }
 }
