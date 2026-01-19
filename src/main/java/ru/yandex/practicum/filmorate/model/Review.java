@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Review {
 
+    @JsonProperty("reviewId")
     private Long id;
 
     @NotNull(message = "filmId обязателен")
@@ -30,7 +32,7 @@ public class Review {
     @NotNull(message = "isPositive обязателен")
     private Boolean isPositive;
 
-    private Integer useful;
+    private Integer useful = 0;
 
     private LocalDateTime createdAt;
 
