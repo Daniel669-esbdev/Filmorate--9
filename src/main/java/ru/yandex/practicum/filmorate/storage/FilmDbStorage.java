@@ -148,21 +148,47 @@ public class FilmDbStorage implements FilmStorage {
     public List<Film> getPopular(int count) {
         log.info("Запрос популярных фильмов: count={}", count);
         String sql = """
-            SELECT f.*, m.id AS mpa_id, m.name AS mpa_name,
-                   COALESCE(COUNT(DISTINCT fl.user_id), 0) AS likes_count
-            FROM films f
-            LEFT JOIN mpa m ON f.mpa_id = m.id
-            LEFT JOIN film_likes fl ON f.id = fl.film_id
-            GROUP BY f.id, m.id, m.name
-            ORDER BY likes_count DESC, f.id ASC
-            LIMIT ?
-            """;
+                SELECT f.*, m.id AS mpa_id, m.name AS mpa_name,
+                       COALESCE(COUNT(DISTINCT fl.user_id), 0) AS likes_count
+                FROM films f
+                LEFT JOIN mpa m ON f.mpa_id = m.id
+                LEFT JOIN film_likes fl ON f.id = fl.film_id
+                GROUP BY f.id, m.id, m.name
+                ORDER BY likes_count DESC, f.id ASC
+                LIMIT ?
+                """;
 
         List<Film> popularFilms = jdbcTemplate.query(sql, this::mapRowToFilm, count);
         log.debug("Найдено популярных фильмов: {}", popularFilms.size());
 
         loadGenresAndLikesForFilms(popularFilms);
         return popularFilms;
+    }
+
+    @Override
+    public List<Film> getCommonFilms(Long userId, Long friendId) {
+        String sql = """
+                SELECT f.*,
+                       m.id   AS mpa_id,
+                       m.name AS mpa_name,
+                       COUNT(DISTINCT fl_all.user_id) AS likes_count
+                FROM films f
+                JOIN film_likes fl1
+                     ON f.id = fl1.film_id AND fl1.user_id = ?
+                JOIN film_likes fl2
+                     ON f.id = fl2.film_id AND fl2.user_id = ?
+                LEFT JOIN film_likes fl_all
+                     ON f.id = fl_all.film_id
+                LEFT JOIN mpa m
+                     ON f.mpa_id = m.id
+                GROUP BY f.id, m.id, m.name
+                ORDER BY likes_count DESC, f.id ASC
+                """;
+
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, userId, friendId);
+        loadGenresAndLikesForFilms(films);
+
+        return films;
     }
 
     private Film mapRowToFilm(ResultSet rs, int rowNum) throws SQLException {
