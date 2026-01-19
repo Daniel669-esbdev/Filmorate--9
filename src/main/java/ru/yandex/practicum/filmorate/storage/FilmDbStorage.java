@@ -165,6 +165,31 @@ public class FilmDbStorage implements FilmStorage {
         return popularFilms;
     }
 
+    @Override
+    public List<Film> search(String query, String by) {
+        String sql;
+        String searchPattern = "%" + query.toLowerCase() + "%";
+
+        if (by.contains("title")) {
+            sql = """
+            SELECT f.*, m.id AS mpa_id, m.name AS mpa_name,
+                   COUNT(fl.user_id) AS likes_count
+            FROM films f
+            LEFT JOIN mpa m ON f.mpa_id = m.id
+            LEFT JOIN film_likes fl ON f.id = fl.film_id
+            WHERE LOWER(f.name) LIKE ? OR LOWER(f.description) LIKE ?
+            GROUP BY f.id, m.id, m.name
+            ORDER BY likes_count DESC
+            """;
+
+            List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, searchPattern, searchPattern);
+            loadGenresAndLikesForFilms(films);
+            return films;
+        }
+
+        return Collections.emptyList();
+    }
+
     private Film mapRowToFilm(ResultSet rs, int rowNum) throws SQLException {
         Film film = new Film();
         film.setId(rs.getLong("id"));

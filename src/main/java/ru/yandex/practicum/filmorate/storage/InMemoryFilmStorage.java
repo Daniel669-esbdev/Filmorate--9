@@ -2,11 +2,8 @@ package ru.yandex.practicum.filmorate.storage;
 
 import ru.yandex.practicum.filmorate.model.Film;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class InMemoryFilmStorage implements FilmStorage {
     private final Map<Long, Film> films = new HashMap<>();
@@ -37,14 +34,36 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public void addLike(Long filmId, Long userId) {
+        if (films.containsKey(filmId)) {
+            films.get(filmId).getLikes().add(userId);
+        }
     }
 
     @Override
     public void deleteLike(Long filmId, Long userId) {
+        if (films.containsKey(filmId)) {
+            films.get(filmId).getLikes().remove(userId);
+        }
     }
 
     @Override
     public List<Film> getPopular(int count) {
-        return List.of();
+        return films.values().stream()
+                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+                .limit(count)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Film> search(String query, String by) {
+        String lowerQuery = query.toLowerCase();
+        return films.values().stream()
+                .filter(film -> {
+                    boolean matchTitle = by.contains("title") &&
+                            film.getName().toLowerCase().contains(lowerQuery);
+                    return matchTitle;
+                })
+                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+                .collect(Collectors.toList());
     }
 }

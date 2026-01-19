@@ -98,6 +98,11 @@ public class FilmService {
         return films;
     }
 
+    public List<Film> search(String query, String by) {
+        log.info("Поиск фильмов по запросу: query={}, by={}", query, by);
+        return filmStorage.search(query, by);
+    }
+
     private void validateFilm(Film film) {
         log.debug("Валидация фильма: name={}, releaseDate={}", film.getName(), film.getReleaseDate());
 
