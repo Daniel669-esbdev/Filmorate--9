@@ -10,6 +10,8 @@ public interface FilmStorage {
 
     Collection<Film> findAll();
 
+    List<Film> findAllBy(Integer directorId, String sortBy);
+
     Film create(Film film);
 
     Film update(Film film);

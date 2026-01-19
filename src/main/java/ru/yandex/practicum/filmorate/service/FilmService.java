@@ -30,8 +30,7 @@ public class FilmService {
             FilmStorage filmStorage,
             UserStorage userStorage,
             MpaStorage mpaStorage,
-            GenreStorage genreStorage
-    ) {
+            GenreStorage genreStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.mpaStorage = mpaStorage;
@@ -43,6 +42,11 @@ public class FilmService {
         Collection<Film> films = filmStorage.findAll();
         log.debug("Получено фильмов: {}", films.size());
         return films;
+    }
+
+    public List<Film> getFilmsByDirector(Integer directorId, String sortBy) {
+        log.info("Запрос фильмов режиссера id={} с сортировкой по {}", directorId, sortBy);
+        return filmStorage.findAllBy(directorId, sortBy);
     }
 
     public Film create(Film film) {

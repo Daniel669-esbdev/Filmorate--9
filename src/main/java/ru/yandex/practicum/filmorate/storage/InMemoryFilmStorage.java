@@ -1,10 +1,12 @@
 package ru.yandex.practicum.filmorate.storage;
 
+import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Component
 public class InMemoryFilmStorage implements FilmStorage {
     private final Map<Long, Film> films = new HashMap<>();
     private long idCounter = 1;
@@ -64,6 +66,21 @@ public class InMemoryFilmStorage implements FilmStorage {
                     return matchTitle;
                 })
                 .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Film> findAllBy(Integer directorId, String sortBy) {
+        return films.values().stream()
+                .filter(film -> film.getDirectors().stream()
+                        .anyMatch(d -> d.getId().equals(directorId)))
+                .sorted((f1, f2) -> {
+                    if ("likes".equals(sortBy)) {
+                        return Integer.compare(f2.getLikes().size(), f1.getLikes().size());
+                    } else {
+                        return f1.getReleaseDate().compareTo(f2.getReleaseDate());
+                    }
+                })
                 .collect(Collectors.toList());
     }
 }
