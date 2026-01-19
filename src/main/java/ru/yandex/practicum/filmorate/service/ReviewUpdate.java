@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -10,6 +11,7 @@ public class ReviewUpdate {
 
     @NotNull(message = "id обязателен")
     @Positive(message = "id должен быть положительным")
+    @JsonProperty("reviewId")
     private Long id;
 
     @NotBlank(message = "Содержимое отзыва не может быть пустым")
