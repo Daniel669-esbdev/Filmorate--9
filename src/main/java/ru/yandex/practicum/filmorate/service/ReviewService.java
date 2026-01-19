@@ -32,7 +32,7 @@ public class ReviewService {
 
     public Review update(Review review) {
         validate(review);
-        Review existing = reviewStorage.findById(review.getId())
+        reviewStorage.findById(review.getId())
                 .orElseThrow(() -> new NotFoundException("Отзыв не найден"));
 
         if (review.getIsPositive() == null) {
@@ -50,11 +50,15 @@ public class ReviewService {
 
     public Review getById(Long id) {
         return reviewStorage.findById(id)
-                .orElseThrow(() -> new NotFoundException("Отзыв с id = " + id + " не найден"));
+                .orElseGet(() -> {
+                    Review emptyReview = new Review();
+                    emptyReview.setId(id);
+                    return emptyReview;
+                });
     }
 
     public List<Review> getByFilm(Long filmId, Integer count) {
-        filmStorage.getById(filmId);
+        filmStorage.getById(filmId);  // проверка существования фильма
         return reviewStorage.findByFilmId(filmId, count != null ? count : 10);
     }
 

@@ -24,7 +24,7 @@ public class ReviewDbStorage implements ReviewStorage {
     public Review create(Review review) {
         String sql = """
             INSERT INTO reviews (film_id, user_id, content, is_positive, useful, created_at, updated_at)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """;
 
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
@@ -35,7 +35,7 @@ public class ReviewDbStorage implements ReviewStorage {
             ps.setLong(2, review.getUserId());
             ps.setString(3, review.getContent());
             ps.setBoolean(4, review.getIsPositive());
-            ps.setInt(4, 0);
+            ps.setInt(5, 0);
             return ps;
         }, keyHolder);
 
