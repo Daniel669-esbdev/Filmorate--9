@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ArrayList;
 
-public class InMemoryUserStorage implements UserStorage {
+public abstract class InMemoryUserStorage implements UserStorage {
     private final Map<Long, User> users = new HashMap<>();
     private long idCounter = 1;
 

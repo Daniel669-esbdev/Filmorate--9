@@ -273,4 +273,39 @@ public class FilmDbStorage implements FilmStorage {
             jdbcTemplate.update(sql, filmId, userId);
         }
     }
+
+    @Override
+    public Map<Long, List<Long>> getAllLikes() {
+        log.debug("Запрос всех лайков для рекомендаций");
+        String sql = "SELECT film_id, user_id FROM film_likes ORDER BY film_id, user_id";
+
+        return jdbcTemplate.query(sql, rs -> {
+            Map<Long, List<Long>> likesMap = new HashMap<>();
+            while (rs.next()) {
+                Long filmId = rs.getLong("film_id");
+                Long userId = rs.getLong("user_id");
+                likesMap.computeIfAbsent(filmId, k -> new ArrayList<>()).add(userId);
+            }
+            return likesMap;
+        });
+    }
+
+    @Override
+    public List<Film> getFilmsNotLikedByUser(Long userId) {
+        log.debug("Запрос фильмов, которые не лайкнул пользователь id={}", userId);
+        String sql = """
+            SELECT DISTINCT f.*, m.id AS mpa_id, m.name AS mpa_name
+            FROM films f
+            LEFT JOIN mpa m ON f.mpa_id = m.id
+            WHERE f.id NOT IN (
+                SELECT film_id FROM film_likes WHERE user_id = ?
+            )
+            ORDER BY f.id
+            """;
+
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, userId);
+        loadGenresAndLikesForFilms(films);
+        log.debug("Найдено фильмов, не лайкнутых пользователем: {}", films.size());
+        return films;
+    }
 }

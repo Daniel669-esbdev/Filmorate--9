@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
@@ -23,6 +24,8 @@ public class FilmService {
     private final UserStorage userStorage;
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
+    private final EventService eventService;
+
 
     private static final LocalDate EARLIEST_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
@@ -30,12 +33,14 @@ public class FilmService {
             FilmStorage filmStorage,
             UserStorage userStorage,
             MpaStorage mpaStorage,
-            GenreStorage genreStorage
+            GenreStorage genreStorage,
+            EventService eventService
     ) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.mpaStorage = mpaStorage;
         this.genreStorage = genreStorage;
+        this.eventService = eventService;
     }
 
     public Collection<Film> findAll() {
@@ -77,6 +82,8 @@ public class FilmService {
         getById(filmId);
         validateUserExists(userId);
         filmStorage.addLike(filmId, userId);
+        // Записываем событие лайка
+        eventService.recordLikeEvent(userId, filmId, Event.Operation.ADD);
         log.info("Лайк добавлен успешно: filmId={}, userId={}", filmId, userId);
     }
 
@@ -85,6 +92,8 @@ public class FilmService {
         getById(filmId);
         validateUserExists(userId);
         filmStorage.deleteLike(filmId, userId);
+        // Записываем событие удаления лайка
+        eventService.recordLikeEvent(userId, filmId, Event.Operation.REMOVE);
         log.info("Лайк удалён: filmId={}, userId={}", filmId, userId);
     }
 
