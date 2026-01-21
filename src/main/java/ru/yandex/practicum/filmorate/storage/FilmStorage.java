@@ -28,4 +28,6 @@ public interface FilmStorage {
 
     // Новый метод для получения фильмов, которые не лайкнул пользователь
     List<Film> getFilmsNotLikedByUser(Long userId);
+
+    List<Film> getFilmsWithFilter(Map<String, String> params);
 }

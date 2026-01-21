@@ -84,4 +84,25 @@ public class InMemoryFilmStorage implements FilmStorage {
                 })
                 .collect(Collectors.toList());
     }
+
+
+    @Override
+    public List<Film> getFilmsWithFilter(Map<String, String> params) {
+
+        if (params == null || params.isEmpty()) {
+            return new ArrayList<>(films.values());
+        }
+
+        if (params.containsKey("count")) {
+            try {
+                int count = Integer.parseInt(params.get("count"));
+                return new ArrayList<>(films.values()).stream()
+                        .limit(count)
+                        .collect(Collectors.toList());
+            } catch (NumberFormatException e) {
+            }
+        }
+
+        return new ArrayList<>(films.values());
+    }
 }
