@@ -99,4 +99,20 @@ class UserDbStorageTests {
         Optional<User> user = userStorage.getById(9999L);
         assertThat(user).isEmpty();
     }
+
+    @Test
+    void shouldDeleteTheUserById() {
+        User user = new User();
+        user.setEmail("user@example.com");
+        user.setLogin("user");
+        user.setName("Пользователь");
+        user.setBirthday(LocalDate.of(1958, 8, 29));
+
+        Optional<User> userOpt = userStorage.getById(userStorage.create(user).getId());
+        assertThat(userOpt).isPresent();
+
+        userStorage.deleteUser(userOpt.get().getId());
+
+        assertThat(userStorage.getById(userOpt.get().getId())).isEmpty();
+    }
 }

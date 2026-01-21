@@ -49,6 +49,13 @@ public class UserService {
         return getUserOrThrow(id);
     }
 
+    public void deleteUser(Long id) {
+        log.info("Deleting a user with id = {}", id);
+
+        userStorage.deleteUser(id);
+        log.info("Deletion was successful");
+    }
+
     public void addFriend(Long userId, Long friendId) {
         log.info("Adding friend {} to user {}", friendId, userId);
         getUserOrThrow(userId);
