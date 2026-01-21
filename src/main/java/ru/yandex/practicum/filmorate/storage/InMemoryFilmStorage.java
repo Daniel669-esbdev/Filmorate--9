@@ -100,6 +100,7 @@ public class InMemoryFilmStorage implements FilmStorage {
                         .limit(count)
                         .collect(Collectors.toList());
             } catch (NumberFormatException e) {
+                System.err.println("Некорректный параметр count: " + params.get("count"));
             }
         }
 
