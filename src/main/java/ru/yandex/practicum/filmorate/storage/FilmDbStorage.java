@@ -308,4 +308,11 @@ public class FilmDbStorage implements FilmStorage {
         log.debug("Найдено фильмов, не лайкнутых пользователем: {}", films.size());
         return films;
     }
+
+    @Override
+    public List<Film> getFilmsWithFilter(Map<String, String> params) {
+        // Временная реализация для компиляции
+        log.warn("Метод getFilmsWithFilter пока не реализован для БД, возвращаю все фильмы");
+        return new ArrayList<>(findAll());
+    }
 }
