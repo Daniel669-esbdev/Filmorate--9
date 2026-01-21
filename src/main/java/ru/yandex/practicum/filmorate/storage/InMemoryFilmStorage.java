@@ -92,4 +92,9 @@ public class InMemoryFilmStorage implements FilmStorage {
                 })
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<Film> getCommonFilms(Long userId, Long friendId) {
+        return List.of();
+    }
 }

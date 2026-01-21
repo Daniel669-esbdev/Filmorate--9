@@ -103,14 +103,10 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void deleteFilm(Long id) {
-        log.debug("Запрос на удаление фильма из БД, id = {}", id);
-
         int rows = jdbcTemplate.update("DELETE FROM films WHERE id = ?", id);
-
         if (rows == 0) {
             throw new NotFoundException("Фильм с id '" + id + "' не найден");
         }
-        log.debug("Строк из films удалено: {}", rows);
     }
 
     @Override
@@ -169,23 +165,36 @@ public class FilmDbStorage implements FilmStorage {
         if (genreId != null) {
             sql.append("JOIN film_genres fg ON f.id = fg.film_id ");
         }
-
         sql.append("WHERE 1=1 ");
-
         if (genreId != null) {
             sql.append("AND fg.genre_id = ? ");
             params.add(genreId);
         }
-
         if (year != null) {
             sql.append("AND EXTRACT(YEAR FROM f.release_date) = ? ");
             params.add(year);
         }
-
         sql.append("GROUP BY f.id, m.name ORDER BY likes_count DESC, f.id ASC LIMIT ?");
         params.add(count);
 
         List<Film> films = jdbcTemplate.query(sql.toString(), this::mapRowToFilm, params.toArray());
+        loadDataForFilms(films);
+        return films;
+    }
+
+    @Override
+    public List<Film> getCommonFilms(Long userId, Long friendId) {
+        String sql = """
+                SELECT f.*, m.name AS mpa_name, COUNT(fl3.user_id) AS likes_count
+                FROM films f
+                JOIN film_likes fl1 ON f.id = fl1.film_id AND fl1.user_id = ?
+                JOIN film_likes fl2 ON f.id = fl2.film_id AND fl2.user_id = ?
+                LEFT JOIN film_likes fl3 ON f.id = fl3.film_id
+                LEFT JOIN mpa m ON f.mpa_id = m.id
+                GROUP BY f.id, m.name
+                ORDER BY likes_count DESC, f.id ASC
+                """;
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, userId, friendId);
         loadDataForFilms(films);
         return films;
     }

@@ -113,6 +113,18 @@ public class FilmService {
         return filmStorage.search(query, by);
     }
 
+    public List<Film> getCommonFilms(Long userId, Long friendId) {
+        log.info("Запрос общих фильмов для пользователей userId={} и friendId={}", userId, friendId);
+        validateUserExists(userId);
+        validateUserExists(friendId);
+
+        if (userId.equals(friendId)) {
+            throw new ValidationException("Нельзя искать общие фильмы с самим собой");
+        }
+
+        return filmStorage.getCommonFilms(userId, friendId);
+    }
+
     private void validateFilm(Film film) {
         log.debug("Валидация фильма: name={}, releaseDate={}", film.getName(), film.getReleaseDate());
 
