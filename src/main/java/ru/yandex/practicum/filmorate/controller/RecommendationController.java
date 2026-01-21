@@ -33,12 +33,10 @@ public class RecommendationController {
             return ResponseEntity.ok(response);
 
         } catch (NotFoundException e) {
-            // 404 - Пользователь не найден
             log.warn("Пользователь не найден: id={}, error={}", id, e.getMessage());
             return createErrorResponse(HttpStatus.NOT_FOUND, "Not Found", e.getMessage());
 
         } catch (IllegalArgumentException e) {
-            // 400 - Некорректный запрос
             log.warn("Некорректный запрос: id={}, error={}", id, e.getMessage());
             return createErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", e.getMessage());
 
@@ -50,7 +48,6 @@ public class RecommendationController {
                     "Internal Server Error", "Произошла внутренняя ошибка сервера");
 
         } catch (Exception e) {
-            // 500 - Любая другая неожиданная ошибка
             log.error("Неожиданная ошибка при запросе рекомендаций пользователя id={}: {}",
                     id, e.getMessage(), e);
             return createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
@@ -89,9 +86,6 @@ public class RecommendationController {
         }
     }
 
-    /**
-     * Создает ResponseEntity с ошибкой в формате JSON
-     */
     private ResponseEntity<Map<String, Object>> createErrorResponse(
             HttpStatus status, String error, String message) {
 
