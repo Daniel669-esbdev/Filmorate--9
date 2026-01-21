@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
@@ -45,7 +46,7 @@ public class EventDbStorage implements EventStorage {
             return stmt;
         }, keyHolder);
 
-        event.setEventId(keyHolder.getKey().longValue());
+        event.setEventId(Objects.requireNonNull(keyHolder.getKey()).longValue());
         event.setTimestamp(timestamp);
 
         log.debug("Событие создано с id={}", event.getEventId());
@@ -57,8 +58,8 @@ public class EventDbStorage implements EventStorage {
         log.debug("Поиск событий для пользователя id={}", userId);
 
         String sql = """
-                SELECT * FROM events 
-                WHERE user_id = ? 
+                SELECT * FROM events
+                WHERE user_id = ?
                 ORDER BY timestamp DESC
                 """;
 
