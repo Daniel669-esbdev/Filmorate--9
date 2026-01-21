@@ -18,9 +18,15 @@ public class FeedController {
 
     @GetMapping("/{id}/feed")
     public List<Event> getUserFeed(@PathVariable Long id) {
-        log.info("Запрос ленты событий пользователя id={}", id);
-        List<Event> feed = eventService.getUserFeed(id);
-        log.debug("Возвращено {} событий для пользователя id={}", feed.size(), id);
-        return feed;
+        log.info("Получен запрос на ленту событий пользователя id={}", id);
+        try {
+            List<Event> feed = eventService.getUserFeed(id);
+            log.info("Успешно возвращено {} событий для пользователя id={}", feed.size(), id);
+            return feed;
+        } catch (Exception e) {
+            log.error("Ошибка при обработке запроса ленты событий пользователя id={}: {}",
+                    id, e.getMessage());
+            throw e;
+        }
     }
 }

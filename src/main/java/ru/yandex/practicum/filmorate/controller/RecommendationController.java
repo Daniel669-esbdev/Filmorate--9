@@ -14,17 +14,34 @@ public class RecommendationController {
 
     public RecommendationController(RecommendationService recommendationService) {
         this.recommendationService = recommendationService;
+        log.info("RecommendationController инициализирован");
     }
 
     @GetMapping("/{id}/recommendations")
     public RecommendationResponse getRecommendations(@PathVariable Long id) {
-        log.info("Запрос рекомендаций для пользователя id={}", id);
-        return recommendationService.getRecommendations(id);
+        log.info("Получен запрос рекомендаций для пользователя id={}", id);
+        try {
+            RecommendationResponse response = recommendationService.getRecommendations(id);
+            log.info("Успешно возвращены рекомендации для пользователя id={}", id);
+            return response;
+        } catch (Exception e) {
+            log.error("Ошибка при обработке запроса рекомендаций пользователя id={}: {}",
+                    id, e.getMessage());
+            throw e;
+        }
     }
 
     @GetMapping("/{id}/recommendations/preferences")
     public RecommendationResponse getRecommendationsByPreferences(@PathVariable Long id) {
-        log.info("Запрос рекомендаций по предпочтениям для пользователя id={}", id);
-        return recommendationService.getRecommendationsByPreferences(id);
+        log.info("Получен запрос рекомендаций по предпочтениям для пользователя id={}", id);
+        try {
+            RecommendationResponse response = recommendationService.getRecommendationsByPreferences(id);
+            log.info("Успешно возвращены рекомендации по предпочтениям для пользователя id={}", id);
+            return response;
+        } catch (Exception e) {
+            log.error("Ошибка при обработке запроса рекомендаций по предпочтениям пользователя id={}: {}",
+                    id, e.getMessage());
+            throw e;
+        }
     }
 }

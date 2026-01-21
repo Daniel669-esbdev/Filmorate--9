@@ -26,7 +26,6 @@ public class FilmService {
     private final GenreStorage genreStorage;
     private final EventService eventService;
 
-
     private static final LocalDate EARLIEST_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
     public FilmService(
@@ -41,89 +40,156 @@ public class FilmService {
         this.mpaStorage = mpaStorage;
         this.genreStorage = genreStorage;
         this.eventService = eventService;
+        log.info("FilmService инициализирован");
     }
 
     public Collection<Film> findAll() {
-        log.debug("Запрос на получение всех фильмов");
-        Collection<Film> films = filmStorage.findAll();
-        log.debug("Получено фильмов: {}", films.size());
-        return films;
+        log.info("Запрос на получение всех фильмов");
+        try {
+            Collection<Film> films = filmStorage.findAll();
+            log.info("Успешно получено {} фильмов", films.size());
+            return films;
+        } catch (Exception e) {
+            log.error("Ошибка при получении всех фильмов: {}", e.getMessage());
+            throw new RuntimeException("Не удалось получить список фильмов", e);
+        }
     }
 
     public Film create(Film film) {
-        log.info("Создание фильма: name={}, releaseDate={}", film.getName(), film.getReleaseDate());
-        validateFilm(film);
-        Film created = filmStorage.create(film);
-        log.info("Фильм создан успешно, id={}", created.getId());
-        return created;
+        log.info("Начало создания фильма: name={}, releaseDate={}", film.getName(), film.getReleaseDate());
+        try {
+            validateFilm(film);
+            Film created = filmStorage.create(film);
+            log.info("Фильм успешно создан, id={}, name={}", created.getId(), created.getName());
+            return created;
+        } catch (ValidationException e) {
+            log.error("Ошибка валидации при создании фильма: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Неожиданная ошибка при создании фильма: {}", e.getMessage());
+            throw new RuntimeException("Не удалось создать фильм", e);
+        }
     }
 
     public Film update(Film film) {
-        log.info("Обновление фильма id={}", film.getId());
-        if (filmStorage.getById(film.getId()).isEmpty()) {
-            throw new NotFoundException("Фильм с id=" + film.getId() + " не найден");
+        log.info("Начало обновления фильма id={}, name={}", film.getId(), film.getName());
+        try {
+            if (filmStorage.getById(film.getId()).isEmpty()) {
+                String errorMsg = String.format("Фильм с id=%d не найден", film.getId());
+                log.error(errorMsg);
+                throw new NotFoundException(errorMsg);
+            }
+            validateFilm(film);
+            Film updated = filmStorage.update(film);
+            log.info("Фильм успешно обновлён, id={}, name={}", updated.getId(), updated.getName());
+            return updated;
+        } catch (NotFoundException | ValidationException e) {
+            log.error("Ошибка при обновлении фильма: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Неожиданная ошибка при обновлении фильма id={}: {}", film.getId(), e.getMessage());
+            throw new RuntimeException("Не удалось обновить фильм", e);
         }
-        validateFilm(film);
-        Film updated = filmStorage.update(film);
-        log.info("Фильм id={} успешно обновлён", updated.getId());
-        return updated;
     }
 
     public Film getById(Long id) {
-        log.debug("Запрос фильма по id={}", id);
-        Film film = filmStorage.getById(id)
-                .orElseThrow(() -> new NotFoundException("Фильм с id=" + id + " не найден"));
-        log.debug("Фильм найден: name={}", film.getName());
-        return film;
+        log.info("Запрос фильма по id={}", id);
+        try {
+            Film film = filmStorage.getById(id)
+                    .orElseThrow(() -> {
+                        String errorMsg = String.format("Фильм с id=%d не найден", id);
+                        log.error(errorMsg);
+                        return new NotFoundException(errorMsg);
+                    });
+            log.info("Фильм найден: id={}, name={}", film.getId(), film.getName());
+            return film;
+        } catch (NotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Ошибка при получении фильма по id={}: {}", id, e.getMessage());
+            throw new RuntimeException("Не удалось получить фильм", e);
+        }
     }
 
     public void addLike(Long filmId, Long userId) {
-        log.info("Добавление лайка: filmId={}, userId={}", filmId, userId);
-        getById(filmId);
-        validateUserExists(userId);
-        filmStorage.addLike(filmId, userId);
-        // Записываем событие лайка
-        eventService.recordLikeEvent(userId, filmId, Event.Operation.ADD);
-        log.info("Лайк добавлен успешно: filmId={}, userId={}", filmId, userId);
+        log.info("Начало добавления лайка: filmId={}, userId={}", filmId, userId);
+        try {
+            getById(filmId); // Проверяем существование фильма
+            validateUserExists(userId);
+            filmStorage.addLike(filmId, userId);
+            eventService.recordLikeEvent(userId, filmId, Event.Operation.ADD);
+            log.info("Лайк успешно добавлен: filmId={}, userId={}", filmId, userId);
+        } catch (NotFoundException e) {
+            log.error("Ошибка при добавлении лайка: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Неожиданная ошибка при добавлении лайка filmId={}, userId={}: {}",
+                    filmId, userId, e.getMessage());
+            throw new RuntimeException("Не удалось добавить лайк", e);
+        }
     }
 
     public void deleteLike(Long filmId, Long userId) {
-        log.info("Удаление лайка: filmId={}, userId={}", filmId, userId);
-        getById(filmId);
-        validateUserExists(userId);
-        filmStorage.deleteLike(filmId, userId);
-        // Записываем событие удаления лайка
-        eventService.recordLikeEvent(userId, filmId, Event.Operation.REMOVE);
-        log.info("Лайк удалён: filmId={}, userId={}", filmId, userId);
+        log.info("Начало удаления лайка: filmId={}, userId={}", filmId, userId);
+        try {
+            getById(filmId); // Проверяем существование фильма
+            validateUserExists(userId);
+            filmStorage.deleteLike(filmId, userId);
+            eventService.recordLikeEvent(userId, filmId, Event.Operation.REMOVE);
+            log.info("Лайк успешно удалён: filmId={}, userId={}", filmId, userId);
+        } catch (NotFoundException e) {
+            log.error("Ошибка при удалении лайка: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Неожиданная ошибка при удалении лайка filmId={}, userId={}: {}",
+                    filmId, userId, e.getMessage());
+            throw new RuntimeException("Не удалось удалить лайк", e);
+        }
     }
 
     public List<Film> getPopular(int count) {
         log.info("Запрос популярных фильмов: count={}", count);
-        if (count <= 0) {
-            throw new IllegalArgumentException("Параметр count должен быть больше 0");
+        try {
+            if (count <= 0) {
+                String errorMsg = "Параметр count должен быть больше 0";
+                log.error(errorMsg);
+                throw new IllegalArgumentException(errorMsg);
+            }
+            List<Film> films = filmStorage.getPopular(count);
+            log.info("Успешно получено {} популярных фильмов", films.size());
+            return films;
+        } catch (IllegalArgumentException e) {
+            log.error("Ошибка параметра при запросе популярных фильмов: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Ошибка при получении популярных фильмов: {}", e.getMessage());
+            throw new RuntimeException("Не удалось получить популярные фильмы", e);
         }
-        List<Film> films = filmStorage.getPopular(count);
-        log.debug("Получено популярных фильмов: {}", films.size());
-        return films;
     }
 
     private void validateFilm(Film film) {
-        log.debug("Валидация фильма: name={}, releaseDate={}", film.getName(), film.getReleaseDate());
+        log.debug("Начало валидации фильма: name={}, releaseDate={}", film.getName(), film.getReleaseDate());
 
         if (film.getReleaseDate() != null && film.getReleaseDate().isBefore(EARLIEST_RELEASE_DATE)) {
-            throw new ValidationException("Дата релиза — не раньше 28 декабря 1895 года");
+            String errorMsg = "Дата релиза — не раньше 28 декабря 1895 года";
+            log.error(errorMsg);
+            throw new ValidationException(errorMsg);
         }
 
         if (film.getMpa() != null && film.getMpa().getId() != null) {
             if (mpaStorage.findById(film.getMpa().getId()).isEmpty()) {
-                throw new NotFoundException("Рейтинг MPA с id=" + film.getMpa().getId() + " не найден");
+                String errorMsg = String.format("Рейтинг MPA с id=%d не найден", film.getMpa().getId());
+                log.error(errorMsg);
+                throw new NotFoundException(errorMsg);
             }
         }
 
         if (film.getGenres() != null) {
             for (Genre genre : film.getGenres()) {
                 if (genre.getId() != null && genreStorage.findById(genre.getId()).isEmpty()) {
-                    throw new NotFoundException("Жанр с id=" + genre.getId() + " не найден");
+                    String errorMsg = String.format("Жанр с id=%d не найден", genre.getId());
+                    log.error(errorMsg);
+                    throw new NotFoundException(errorMsg);
                 }
             }
         }
@@ -132,8 +198,12 @@ public class FilmService {
     }
 
     private void validateUserExists(Long userId) {
+        log.debug("Проверка существования пользователя id={}", userId);
         if (userStorage.getById(userId).isEmpty()) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+            String errorMsg = String.format("Пользователь с id=%d не найден", userId);
+            log.error(errorMsg);
+            throw new NotFoundException(errorMsg);
         }
+        log.debug("Пользователь id={} существует", userId);
     }
 }
