@@ -3,10 +3,11 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.model.Event;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.FeedStorage;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.Collection;
 import java.util.List;
@@ -16,162 +17,90 @@ import java.util.List;
 public class UserService {
     private final UserStorage userStorage;
     private final FeedStorage feedStorage;
+    private final RecommendationService recommendationService;
 
-    public UserService(UserStorage userStorage, FeedStorage feedStorage) {
+    public UserService(UserStorage userStorage,
+                       FeedStorage feedStorage,
+                       RecommendationService recommendationService) {
         this.userStorage = userStorage;
         this.feedStorage = feedStorage;
-        log.info("UserService инициализирован");
+        this.recommendationService = recommendationService;
+        log.info("UserService успешно инициализирован");
     }
 
     public Collection<User> findAll() {
         log.info("Запрос на получение всех пользователей");
-        try {
-            Collection<User> users = userStorage.findAll();
-            log.info("Успешно получено {} пользователей", users.size());
-            return users;
-        } catch (Exception e) {
-            log.error("Ошибка при получении всех пользователей: {}", e.getMessage());
-            throw new RuntimeException("Не удалось получить список пользователей", e);
-        }
+        return userStorage.findAll();
     }
 
     public User create(User user) {
-        log.info("Начало создания пользователя: login={}, email={}", user.getLogin(), user.getEmail());
-        try {
-            if (user.getName() == null || user.getName().isBlank()) {
-                user.setName(user.getLogin());
-            }
-            User created = userStorage.create(user);
-            log.info("Пользователь успешно создан: id={}, login={}", created.getId(), created.getLogin());
-            return created;
-        } catch (Exception e) {
-            log.error("Ошибка при создании пользователя: {}", e.getMessage());
-            throw new RuntimeException("Не удалось создать пользователя", e);
+        log.info("Создание пользователя: login={}", user.getLogin());
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
         }
+        return userStorage.create(user);
     }
 
     public User update(User user) {
-        log.info("Начало обновления пользователя id={}, login={}", user.getId(), user.getLogin());
-        try {
-            getUserOrThrow(user.getId());
-            if (user.getName() == null || user.getName().isBlank()) {
-                user.setName(user.getLogin());
-            }
-            User updated = userStorage.update(user);
-            log.info("Пользователь успешно обновлён: id={}, login={}", updated.getId(), updated.getLogin());
-            return updated;
-        } catch (NotFoundException e) {
-            log.error("Ошибка при обновлении пользователя: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Неожиданная ошибка при обновлении пользователя id={}: {}", user.getId(), e.getMessage());
-            throw new RuntimeException("Не удалось обновить пользователя", e);
+        log.info("Обновление пользователя: id={}", user.getId());
+        getUserOrThrow(user.getId());
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
         }
+        return userStorage.update(user);
     }
 
     public User getById(Long id) {
-        log.info("Запрос пользователя по id={}", id);
-        try {
-            User user = getUserOrThrow(id);
-            log.info("Пользователь найден: id={}, login={}", user.getId(), user.getLogin());
-            return user;
-        } catch (NotFoundException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Ошибка при получении пользователя по id={}: {}", id, e.getMessage());
-            throw new RuntimeException("Не удалось получить пользователя", e);
-        }
+        log.info("Получение пользователя по id={}", id);
+        return getUserOrThrow(id);
     }
 
     public void addFriend(Long userId, Long friendId) {
-        log.info("Начало добавления друга: userId={}, friendId={}", userId, friendId);
-        try {
-            getUserOrThrow(userId);
-            getUserOrThrow(friendId);
-            userStorage.addFriend(userId, friendId);
-            feedStorage.addEvent(userId, "FRIEND", "ADD", friendId);
-            log.info("Друг успешно добавлен: userId={}, friendId={}", userId, friendId);
-        } catch (NotFoundException e) {
-            log.error("Ошибка при добавлении друга: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Неожиданная ошибка при добавлении друга userId={}, friendId={}: {}",
-                    userId, friendId, e.getMessage());
-            throw new RuntimeException("Не удалось добавить друга", e);
-        }
+        log.info("Пользователь {} добавляет в друзья {}", userId, friendId);
+        getUserOrThrow(userId);
+        getUserOrThrow(friendId);
+        userStorage.addFriend(userId, friendId);
+        feedStorage.addEvent(userId, "FRIEND", "ADD", friendId);
     }
 
     public void deleteFriend(Long userId, Long friendId) {
-        log.info("Начало удаления друга: userId={}, friendId={}", userId, friendId);
-        try {
-            getUserOrThrow(userId);
-            getUserOrThrow(friendId);
-            userStorage.deleteFriend(userId, friendId);
-            feedStorage.addEvent(userId, "FRIEND", "REMOVE", friendId);
-            log.info("Друг успешно удалён: userId={}, friendId={}", userId, friendId);
-        } catch (NotFoundException e) {
-            log.error("Ошибка при удалении друга: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Неожиданная ошибка при удаления друга userId={}, friendId={}: {}",
-                    userId, friendId, e.getMessage());
-            throw new RuntimeException("Не удалось удалить друга", e);
-        }
+        log.info("Пользователь {} удаляет из друзей {}", userId, friendId);
+        getUserOrThrow(userId);
+        getUserOrThrow(friendId);
+        userStorage.deleteFriend(userId, friendId);
+        feedStorage.addEvent(userId, "FRIEND", "REMOVE", friendId);
     }
 
     public List<User> getFriends(Long userId) {
-        log.info("Запрос друзей пользователя id={}", userId);
-        try {
-            getUserOrThrow(userId);
-            List<User> friends = userStorage.getFriends(userId);
-            log.info("Успешно получено {} друзей для пользователя id={}", friends.size(), userId);
-            return friends;
-        } catch (NotFoundException e) {
-            log.error("Ошибка при получении друзей: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Ошибка при получении друзей пользователя id={}: {}", userId, e.getMessage());
-            throw new RuntimeException("Не удалось получить список друзей", e);
-        }
+        log.info("Запрос списка друзей пользователя {}", userId);
+        getUserOrThrow(userId);
+        return userStorage.getFriends(userId);
     }
 
     public List<User> getCommonFriends(Long userId, Long otherId) {
-        log.info("Запрос общих друзей: userId={}, otherId={}", userId, otherId);
-        try {
-            getUserOrThrow(userId);
-            getUserOrThrow(otherId);
-            List<User> commonFriends = userStorage.getCommonFriends(userId, otherId);
-            log.info("Успешно получено {} общих друзей для пользователей {} и {}",
-                    commonFriends.size(), userId, otherId);
-            return commonFriends;
-        } catch (NotFoundException e) {
-            log.error("Ошибка при получении общих друзей: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Ошибка при получении общих друзей userId={}, otherId={}: {}",
-                    userId, otherId, e.getMessage());
-            throw new RuntimeException("Не удалось получить общих друзей", e);
-        }
+        log.info("Запрос общих друзей пользователей {} и {}", userId, otherId);
+        getUserOrThrow(userId);
+        getUserOrThrow(otherId);
+        return userStorage.getCommonFriends(userId, otherId);
     }
 
     public List<Event> getFeed(Long userId) {
+        log.info("Запрос ленты событий пользователя {}", userId);
         getUserOrThrow(userId);
         return feedStorage.getFeed(userId);
     }
 
+    public List<Film> getRecommendations(Long userId) {
+        log.info("Запрос рекомендаций для пользователя {}", userId);
+        getUserOrThrow(userId);
+        return recommendationService.getRecommendations(userId);
+    }
+
     private User getUserOrThrow(Long id) {
-        try {
-            return userStorage.getById(id)
-                    .orElseThrow(() -> {
-                        String errorMsg = String.format("Пользователь с id=%d не найден", id);
-                        log.error(errorMsg);
-                        return new NotFoundException(errorMsg);
-                    });
-        } catch (NotFoundException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Неожиданная ошибка при поиске пользователя id={}: {}", id, e.getMessage());
-            throw new RuntimeException("Не удалось найти пользователя", e);
-        }
+        return userStorage.getById(id)
+                .orElseThrow(() -> {
+                    log.warn("Пользователь с id={} не найден", id);
+                    return new NotFoundException(String.format("Пользователь с id=%d не найден", id));
+                });
     }
 }
