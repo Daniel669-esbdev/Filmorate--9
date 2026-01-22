@@ -2,13 +2,17 @@ package ru.yandex.practicum.filmorate.model;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 import java.time.LocalDate;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
     @PositiveOrZero
-    private long id;
+    private Long id;
 
     @Email(message = "Email должен быть корректным")
     @NotBlank(message = "Email не может быть пустым")

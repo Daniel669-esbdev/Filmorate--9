@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.storage;
 
 import ru.yandex.practicum.filmorate.model.Film;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -22,7 +23,11 @@ public interface FilmStorage {
 
     List<Film> getPopular(int count);
 
+    // Новый метод для получения лайков всех пользователей
     Map<Long, List<Long>> getAllLikes();
 
+    // Новый метод для получения фильмов, которые не лайкнул пользователь
     List<Film> getFilmsNotLikedByUser(Long userId);
+
+    List<Film> getFilmsWithFilter(Map<String, String> params);
 }

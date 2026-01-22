@@ -204,6 +204,17 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 
+    @Override
+    public List<Film> getFilmsWithFilter(Map<String, String> params) {
+        log.debug("Запрос фильмов с фильтром: {}", params);
+
+        // Простая реализация - возвращаем все фильмы
+        // Можно расширить при необходимости
+        List<Film> films = new ArrayList<>(findAll());
+        log.debug("Возвращено фильмов с фильтром: {}", films.size());
+        return films;
+    }
+
     private Film mapRowToFilm(ResultSet rs, int rowNum) throws SQLException {
         Film film = new Film();
         film.setId(rs.getLong("id"));
