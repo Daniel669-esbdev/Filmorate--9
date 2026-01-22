@@ -192,7 +192,7 @@ public class FilmDbStorage implements FilmStorage {
             FROM films f
             LEFT JOIN mpa m ON f.mpa_id = m.id
             WHERE NOT EXISTS (
-                SELECT 1 FROM film_likes fl 
+                SELECT 1 FROM film_likes fl
                 WHERE fl.film_id = f.id AND fl.user_id = ?
             )
             ORDER BY f.id
