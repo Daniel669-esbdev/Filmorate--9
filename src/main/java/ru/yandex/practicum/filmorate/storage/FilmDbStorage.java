@@ -127,14 +127,12 @@ public class FilmDbStorage implements FilmStorage {
         String checkSql = "SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?";
         Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, filmId, userId);
 
-        log.debug("Проверка лайка: уже существует? count={}", count);
-
         if (count == 0) {
             String insertSql = "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)";
             jdbcTemplate.update(insertSql, filmId, userId);
             log.info("Лайк добавлен: filmId={}, userId={}", filmId, userId);
         } else {
-            log.info("Лайк уже существует, пропускаем: filmId={}, userId={}", filmId, userId);
+            log.info("Лайк уже существует: filmId={}, userId={}", filmId, userId);
         }
     }
 
@@ -142,8 +140,7 @@ public class FilmDbStorage implements FilmStorage {
     public void deleteLike(Long filmId, Long userId) {
         log.info("Удаление лайка: filmId={}, userId={}", filmId, userId);
         String sql = "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?";
-        int rows = jdbcTemplate.update(sql, filmId, userId);
-        log.debug("Удалено лайков: {}", rows);
+        jdbcTemplate.update(sql, filmId, userId);
     }
 
     @Override
@@ -161,27 +158,24 @@ public class FilmDbStorage implements FilmStorage {
             """;
 
         List<Film> popularFilms = jdbcTemplate.query(sql, this::mapRowToFilm, count);
-        log.debug("Найдено популярных фильмов: {}", popularFilms.size());
-
         loadGenresAndLikesForFilms(popularFilms);
         return popularFilms;
     }
 
     @Override
     public Map<Long, List<Long>> getAllLikes() {
-        log.debug("Запрос всех лайков для рекомендаций");
-        String sql = "SELECT film_id, user_id FROM film_likes ORDER BY film_id, user_id";
-
-        Map<Long, List<Long>> likesMap = new HashMap<>();
+        log.debug("Запрос всех лайков для рекомендаций (группировка по пользователям)");
+        String sql = "SELECT user_id, film_id FROM film_likes";
+        Map<Long, List<Long>> userLikesMap = new HashMap<>();
 
         jdbcTemplate.query(sql, rs -> {
-            Long filmId = rs.getLong("film_id");
             Long userId = rs.getLong("user_id");
-            likesMap.computeIfAbsent(filmId, k -> new ArrayList<>()).add(userId);
+            Long filmId = rs.getLong("film_id");
+            userLikesMap.computeIfAbsent(userId, k -> new ArrayList<>()).add(filmId);
         });
 
-        log.debug("Получено лайков для {} фильмов", likesMap.size());
-        return likesMap;
+        log.debug("Получено лайков для {} пользователей", userLikesMap.size());
+        return userLikesMap;
     }
 
     @Override
@@ -200,19 +194,12 @@ public class FilmDbStorage implements FilmStorage {
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, userId);
         loadGenresAndLikesForFilms(films);
-        log.debug("Найдено фильмов, не лайкнутых пользователем: {}", films.size());
         return films;
     }
 
     @Override
     public List<Film> getFilmsWithFilter(Map<String, String> params) {
-        log.debug("Запрос фильмов с фильтром: {}", params);
-
-        // Простая реализация - возвращаем все фильмы
-        // Можно расширить при необходимости
-        List<Film> films = new ArrayList<>(findAll());
-        log.debug("Возвращено фильмов с фильтром: {}", films.size());
-        return films;
+        return new ArrayList<>(findAll());
     }
 
     private Film mapRowToFilm(ResultSet rs, int rowNum) throws SQLException {
@@ -266,13 +253,13 @@ public class FilmDbStorage implements FilmStorage {
         List<Long> ids = films.stream().map(Film::getId).toList();
         String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
 
-        String genreSql = """
+        String genreSql = String.format("""
                 SELECT fg.film_id, g.id, g.name
                 FROM film_genres fg
                 JOIN genres g ON fg.genre_id = g.id
                 WHERE fg.film_id IN (%s)
                 ORDER BY fg.film_id, g.id
-                """.formatted(placeholders);
+                """, placeholders);
 
         Map<Long, Set<Genre>> genresMap = new HashMap<>();
         jdbcTemplate.query(genreSql, rs -> {
@@ -283,11 +270,11 @@ public class FilmDbStorage implements FilmStorage {
             genresMap.computeIfAbsent(filmId, k -> new LinkedHashSet<>()).add(g);
         }, ids.toArray());
 
-        String likesSql = """
+        String likesSql = String.format("""
                 SELECT film_id, user_id
                 FROM film_likes
                 WHERE film_id IN (%s)
-                """.formatted(placeholders);
+                """, placeholders);
 
         Map<Long, Set<Long>> likesMap = new HashMap<>();
         jdbcTemplate.query(likesSql, rs -> {
@@ -304,7 +291,6 @@ public class FilmDbStorage implements FilmStorage {
 
     private void saveGenres(long filmId, Set<Genre> genres) {
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", filmId);
-
         if (genres == null || genres.isEmpty()) return;
 
         String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";

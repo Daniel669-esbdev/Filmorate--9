@@ -4,7 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.storage.FeedStorage;
 
 import java.util.Collection;
 import java.util.List;
@@ -13,9 +15,11 @@ import java.util.List;
 @Service
 public class UserService {
     private final UserStorage userStorage;
+    private final FeedStorage feedStorage;
 
-    public UserService(UserStorage userStorage) {
+    public UserService(UserStorage userStorage, FeedStorage feedStorage) {
         this.userStorage = userStorage;
+        this.feedStorage = feedStorage;
         log.info("UserService инициализирован");
     }
 
@@ -35,7 +39,6 @@ public class UserService {
         log.info("Начало создания пользователя: login={}, email={}", user.getLogin(), user.getEmail());
         try {
             if (user.getName() == null || user.getName().isBlank()) {
-                log.info("Имя пользователя не указано, используется login={}", user.getLogin());
                 user.setName(user.getLogin());
             }
             User created = userStorage.create(user);
@@ -52,7 +55,6 @@ public class UserService {
         try {
             getUserOrThrow(user.getId());
             if (user.getName() == null || user.getName().isBlank()) {
-                log.info("Имя пользователя не указано, используется login={}", user.getLogin());
                 user.setName(user.getLogin());
             }
             User updated = userStorage.update(user);
@@ -87,6 +89,7 @@ public class UserService {
             getUserOrThrow(userId);
             getUserOrThrow(friendId);
             userStorage.addFriend(userId, friendId);
+            feedStorage.addEvent(userId, "FRIEND", "ADD", friendId);
             log.info("Друг успешно добавлен: userId={}, friendId={}", userId, friendId);
         } catch (NotFoundException e) {
             log.error("Ошибка при добавлении друга: {}", e.getMessage());
@@ -104,6 +107,7 @@ public class UserService {
             getUserOrThrow(userId);
             getUserOrThrow(friendId);
             userStorage.deleteFriend(userId, friendId);
+            feedStorage.addEvent(userId, "FRIEND", "REMOVE", friendId);
             log.info("Друг успешно удалён: userId={}, friendId={}", userId, friendId);
         } catch (NotFoundException e) {
             log.error("Ошибка при удалении друга: {}", e.getMessage());
@@ -148,6 +152,11 @@ public class UserService {
                     userId, otherId, e.getMessage());
             throw new RuntimeException("Не удалось получить общих друзей", e);
         }
+    }
+
+    public List<Event> getFeed(Long userId) {
+        getUserOrThrow(userId);
+        return feedStorage.getFeed(userId);
     }
 
     private User getUserOrThrow(Long id) {

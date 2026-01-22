@@ -10,6 +10,7 @@ import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.MpaStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.storage.FeedStorage;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -23,6 +24,7 @@ public class FilmService {
     private final UserStorage userStorage;
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
+    private final FeedStorage feedStorage;
 
     private static final LocalDate EARLIEST_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
@@ -30,12 +32,14 @@ public class FilmService {
             FilmStorage filmStorage,
             UserStorage userStorage,
             MpaStorage mpaStorage,
-            GenreStorage genreStorage
+            GenreStorage genreStorage,
+            FeedStorage feedStorage
     ) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.mpaStorage = mpaStorage;
         this.genreStorage = genreStorage;
+        this.feedStorage = feedStorage;
         log.info("FilmService инициализирован");
     }
 
@@ -110,9 +114,10 @@ public class FilmService {
     public void addLike(Long filmId, Long userId) {
         log.info("Начало добавления лайка: filmId={}, userId={}", filmId, userId);
         try {
-            getById(filmId); // Проверяем существование фильма
+            getById(filmId);
             validateUserExists(userId);
             filmStorage.addLike(filmId, userId);
+            feedStorage.addEvent(userId, "LIKE", "ADD", filmId);
             log.info("Лайк успешно добавлен: filmId={}, userId={}", filmId, userId);
         } catch (NotFoundException e) {
             log.error("Ошибка при добавлении лайка: {}", e.getMessage());
@@ -127,9 +132,10 @@ public class FilmService {
     public void deleteLike(Long filmId, Long userId) {
         log.info("Начало удаления лайка: filmId={}, userId={}", filmId, userId);
         try {
-            getById(filmId); // Проверяем существование фильма
+            getById(filmId);
             validateUserExists(userId);
             filmStorage.deleteLike(filmId, userId);
+            feedStorage.addEvent(userId, "LIKE", "REMOVE", filmId);
             log.info("Лайк успешно удалён: filmId={}, userId={}", filmId, userId);
         } catch (NotFoundException e) {
             log.error("Ошибка при удалении лайка: {}", e.getMessage());
