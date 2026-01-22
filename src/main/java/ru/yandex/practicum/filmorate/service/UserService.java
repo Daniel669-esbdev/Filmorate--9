@@ -13,11 +13,9 @@ import java.util.List;
 @Service
 public class UserService {
     private final UserStorage userStorage;
-    private final EventService eventService;
 
-    public UserService(UserStorage userStorage, EventService eventService) {
+    public UserService(UserStorage userStorage) {
         this.userStorage = userStorage;
-        this.eventService = eventService;
         log.info("UserService инициализирован");
     }
 
@@ -89,8 +87,6 @@ public class UserService {
             getUserOrThrow(userId);
             getUserOrThrow(friendId);
             userStorage.addFriend(userId, friendId);
-            eventService.recordFriendEvent(userId, friendId, Event.Operation.ADD);
-            eventService.recordFriendEvent(friendId, userId, Event.Operation.ADD);
             log.info("Друг успешно добавлен: userId={}, friendId={}", userId, friendId);
         } catch (NotFoundException e) {
             log.error("Ошибка при добавлении друга: {}", e.getMessage());
@@ -108,14 +104,12 @@ public class UserService {
             getUserOrThrow(userId);
             getUserOrThrow(friendId);
             userStorage.deleteFriend(userId, friendId);
-            eventService.recordFriendEvent(userId, friendId, Event.Operation.REMOVE);
-            eventService.recordFriendEvent(friendId, userId, Event.Operation.REMOVE);
             log.info("Друг успешно удалён: userId={}, friendId={}", userId, friendId);
         } catch (NotFoundException e) {
             log.error("Ошибка при удалении друга: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Неожиданная ошибка при удалении друга userId={}, friendId={}: {}",
+            log.error("Неожиданная ошибка при удаления друга userId={}, friendId={}: {}",
                     userId, friendId, e.getMessage());
             throw new RuntimeException("Не удалось удалить друга", e);
         }

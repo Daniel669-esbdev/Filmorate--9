@@ -23,7 +23,6 @@ public class FilmService {
     private final UserStorage userStorage;
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
-    private final EventService eventService;
 
     private static final LocalDate EARLIEST_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
@@ -31,14 +30,12 @@ public class FilmService {
             FilmStorage filmStorage,
             UserStorage userStorage,
             MpaStorage mpaStorage,
-            GenreStorage genreStorage,
-            EventService eventService
+            GenreStorage genreStorage
     ) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
         this.mpaStorage = mpaStorage;
         this.genreStorage = genreStorage;
-        this.eventService = eventService;
         log.info("FilmService инициализирован");
     }
 
@@ -116,7 +113,6 @@ public class FilmService {
             getById(filmId); // Проверяем существование фильма
             validateUserExists(userId);
             filmStorage.addLike(filmId, userId);
-            eventService.recordLikeEvent(userId, filmId, Event.Operation.ADD);
             log.info("Лайк успешно добавлен: filmId={}, userId={}", filmId, userId);
         } catch (NotFoundException e) {
             log.error("Ошибка при добавлении лайка: {}", e.getMessage());
@@ -134,7 +130,6 @@ public class FilmService {
             getById(filmId); // Проверяем существование фильма
             validateUserExists(userId);
             filmStorage.deleteLike(filmId, userId);
-            eventService.recordLikeEvent(userId, filmId, Event.Operation.REMOVE);
             log.info("Лайк успешно удалён: filmId={}, userId={}", filmId, userId);
         } catch (NotFoundException e) {
             log.error("Ошибка при удалении лайка: {}", e.getMessage());
