@@ -14,7 +14,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -55,8 +54,8 @@ public class EventDbStorage implements EventStorage {
         log.info("Получение событий для пользователя с id={}", userId);
 
         String sql = """
-                SELECT * FROM events 
-                WHERE user_id = ? 
+                SELECT * FROM events
+                WHERE user_id = ?
                 ORDER BY timestamp DESC
                 """;
 

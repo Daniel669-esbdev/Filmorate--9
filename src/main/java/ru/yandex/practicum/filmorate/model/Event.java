@@ -1,7 +1,5 @@
 package ru.yandex.practicum.filmorate.model;
 
-import jdk.dynalink.Operation;
-import jdk.jfr.EventType;
 import lombok.Data;
 import java.time.LocalDateTime;
 
