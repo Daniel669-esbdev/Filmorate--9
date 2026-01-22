@@ -167,6 +167,43 @@ public class FilmDbStorage implements FilmStorage {
         return popularFilms;
     }
 
+    @Override
+    public Map<Long, List<Long>> getAllLikes() {
+        log.debug("Запрос всех лайков для рекомендаций");
+        String sql = "SELECT film_id, user_id FROM film_likes ORDER BY film_id, user_id";
+
+        Map<Long, List<Long>> likesMap = new HashMap<>();
+
+        jdbcTemplate.query(sql, rs -> {
+            Long filmId = rs.getLong("film_id");
+            Long userId = rs.getLong("user_id");
+            likesMap.computeIfAbsent(filmId, k -> new ArrayList<>()).add(userId);
+        });
+
+        log.debug("Получено лайков для {} фильмов", likesMap.size());
+        return likesMap;
+    }
+
+    @Override
+    public List<Film> getFilmsNotLikedByUser(Long userId) {
+        log.debug("Запрос фильмов, которые не лайкнул пользователь id={}", userId);
+        String sql = """
+            SELECT DISTINCT f.*, m.id AS mpa_id, m.name AS mpa_name
+            FROM films f
+            LEFT JOIN mpa m ON f.mpa_id = m.id
+            WHERE NOT EXISTS (
+                SELECT 1 FROM film_likes fl 
+                WHERE fl.film_id = f.id AND fl.user_id = ?
+            )
+            ORDER BY f.id
+            """;
+
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, userId);
+        loadGenresAndLikesForFilms(films);
+        log.debug("Найдено фильмов, не лайкнутых пользователем: {}", films.size());
+        return films;
+    }
+
     private Film mapRowToFilm(ResultSet rs, int rowNum) throws SQLException {
         Film film = new Film();
         film.setId(rs.getLong("id"));
@@ -263,58 +300,5 @@ public class FilmDbStorage implements FilmStorage {
         for (Genre genre : genres) {
             jdbcTemplate.update(sql, filmId, genre.getId());
         }
-    }
-
-    private void saveLikes(long filmId, Set<Long> likes) {
-        jdbcTemplate.update("DELETE FROM film_likes WHERE film_id = ?", filmId);
-
-        if (likes == null || likes.isEmpty()) return;
-
-        String sql = "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)";
-        for (Long userId : likes) {
-            jdbcTemplate.update(sql, filmId, userId);
-        }
-    }
-
-    @Override
-    public Map<Long, List<Long>> getAllLikes() {
-        log.debug("Запрос всех лайков для рекомендаций");
-        String sql = "SELECT film_id, user_id FROM film_likes ORDER BY film_id, user_id";
-
-        return jdbcTemplate.query(sql, rs -> {
-            Map<Long, List<Long>> likesMap = new HashMap<>();
-            while (rs.next()) {
-                Long filmId = rs.getLong("film_id");
-                Long userId = rs.getLong("user_id");
-                likesMap.computeIfAbsent(filmId, k -> new ArrayList<>()).add(userId);
-            }
-            return likesMap;
-        });
-    }
-
-    @Override
-    public List<Film> getFilmsNotLikedByUser(Long userId) {
-        log.debug("Запрос фильмов, которые не лайкнул пользователь id={}", userId);
-        String sql = """
-            SELECT DISTINCT f.*, m.id AS mpa_id, m.name AS mpa_name
-            FROM films f
-            LEFT JOIN mpa m ON f.mpa_id = m.id
-            WHERE f.id NOT IN (
-                SELECT film_id FROM film_likes WHERE user_id = ?
-            )
-            ORDER BY f.id
-            """;
-
-        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, userId);
-        loadGenresAndLikesForFilms(films);
-        log.debug("Найдено фильмов, не лайкнутых пользователем: {}", films.size());
-        return films;
-    }
-
-    @Override
-    public List<Film> getFilmsWithFilter(Map<String, String> params) {
-        // Временная реализация для компиляции
-        log.warn("Метод getFilmsWithFilter пока не реализован для БД, возвращаю все фильмы");
-        return new ArrayList<>(findAll());
     }
 }
