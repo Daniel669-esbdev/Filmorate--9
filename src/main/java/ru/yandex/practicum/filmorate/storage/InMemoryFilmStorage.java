@@ -1,12 +1,12 @@
 package ru.yandex.practicum.filmorate.storage;
 
 import ru.yandex.practicum.filmorate.model.Film;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class InMemoryFilmStorage implements FilmStorage {
     private final Map<Long, Film> films = new HashMap<>();
+    private final Map<Long, Set<Long>> likes = new HashMap<>();
     private long idCounter = 1;
 
     @Override
@@ -18,11 +18,16 @@ public class InMemoryFilmStorage implements FilmStorage {
     public Film create(Film film) {
         film.setId(idCounter++);
         films.put(film.getId(), film);
+        likes.put(film.getId(), new HashSet<>());
         return film;
     }
 
     @Override
     public Film update(Film film) {
+        if (!films.containsKey(film.getId())) {
+            throw new ru.yandex.practicum.filmorate.exception.NotFoundException(
+                    "Фильм с id=" + film.getId() + " не найден");
+        }
         films.put(film.getId(), film);
         return film;
     }
@@ -34,20 +39,23 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public void deleteFilm(Long id) {
+        films.remove(id);
+        likes.remove(id);
     }
-
 
     @Override
     public void addLike(Long filmId, Long userId) {
-        if (films.containsKey(filmId)) {
-            films.get(filmId).getLikes().add(userId);
+        if (!films.containsKey(filmId)) {
+            throw new ru.yandex.practicum.filmorate.exception.NotFoundException(
+                    "Фильм с id=" + filmId + " не найден");
         }
+        likes.computeIfAbsent(filmId, k -> new HashSet<>()).add(userId);
     }
 
     @Override
     public void deleteLike(Long filmId, Long userId) {
-        if (films.containsKey(filmId)) {
-            films.get(filmId).getLikes().remove(userId);
+        if (likes.containsKey(filmId)) {
+            likes.get(filmId).remove(userId);
         }
     }
 
@@ -57,7 +65,11 @@ public class InMemoryFilmStorage implements FilmStorage {
                 .filter(film -> year == null || film.getReleaseDate().getYear() == year)
                 .filter(film -> genreId == null || film.getGenres().stream()
                         .anyMatch(g -> g.getId() == genreId))
-                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+                .sorted((f1, f2) -> {
+                    int likes1 = likes.getOrDefault(f1.getId(), Collections.emptySet()).size();
+                    int likes2 = likes.getOrDefault(f2.getId(), Collections.emptySet()).size();
+                    return Integer.compare(likes2, likes1);
+                })
                 .limit(count)
                 .collect(Collectors.toList());
     }
@@ -74,7 +86,11 @@ public class InMemoryFilmStorage implements FilmStorage {
                                     .anyMatch(d -> d.getName().toLowerCase().contains(lowerQuery));
                     return matchTitle || matchDirector;
                 })
-                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
+                .sorted((f1, f2) -> {
+                    int likes1 = likes.getOrDefault(f1.getId(), Collections.emptySet()).size();
+                    int likes2 = likes.getOrDefault(f2.getId(), Collections.emptySet()).size();
+                    return Integer.compare(likes2, likes1);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -85,7 +101,9 @@ public class InMemoryFilmStorage implements FilmStorage {
                         .anyMatch(d -> d.getId().equals(directorId)))
                 .sorted((f1, f2) -> {
                     if ("likes".equals(sortBy)) {
-                        return Integer.compare(f2.getLikes().size(), f1.getLikes().size());
+                        int likes1 = likes.getOrDefault(f1.getId(), Collections.emptySet()).size();
+                        int likes2 = likes.getOrDefault(f2.getId(), Collections.emptySet()).size();
+                        return Integer.compare(likes2, likes1);
                     } else {
                         return f1.getReleaseDate().compareTo(f2.getReleaseDate());
                     }
@@ -94,7 +112,44 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
+    public Map<Long, List<Long>> getAllLikes() {
+        Map<Long, List<Long>> userLikesMap = new HashMap<>();
+        for (Map.Entry<Long, Set<Long>> entry : likes.entrySet()) {
+            Long filmId = entry.getKey();
+            for (Long userId : entry.getValue()) {
+                userLikesMap.computeIfAbsent(userId, k -> new ArrayList<>()).add(filmId);
+            }
+        }
+        return userLikesMap;
+    }
+
+    @Override
+    public List<Film> getFilmsNotLikedByUser(Long userId) {
+        return films.values().stream()
+                .filter(film -> {
+                    Set<Long> filmLikes = likes.getOrDefault(film.getId(), Collections.emptySet());
+                    return !filmLikes.contains(userId);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<Film> getCommonFilms(Long userId, Long friendId) {
-        return List.of();
+        return films.values().stream()
+                .filter(film -> {
+                    Set<Long> filmLikes = likes.getOrDefault(film.getId(), Collections.emptySet());
+                    return filmLikes.contains(userId) && filmLikes.contains(friendId);
+                })
+                .sorted((f1, f2) -> {
+                    int likes1 = likes.getOrDefault(f1.getId(), Collections.emptySet()).size();
+                    int likes2 = likes.getOrDefault(f2.getId(), Collections.emptySet()).size();
+                    return Integer.compare(likes2, likes1);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Film> getFilmsWithFilter(Map<String, String> params) {
+        return new ArrayList<>(films.values());
     }
 }

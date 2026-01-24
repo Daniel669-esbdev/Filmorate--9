@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.storage;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.List;
 
@@ -29,4 +30,10 @@ public interface FilmStorage {
     List<Film> search(String query, String by);
 
     List<Film> getCommonFilms(Long userId, Long friendId);
+
+    Map<Long, List<Long>> getAllLikes();
+
+    List<Film> getFilmsNotLikedByUser(Long userId);
+
+    List<Film> getFilmsWithFilter(Map<String, String> params);
 }

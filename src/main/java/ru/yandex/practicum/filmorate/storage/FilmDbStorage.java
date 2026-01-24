@@ -104,20 +104,22 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public void deleteFilm(Long id) {
         int rows = jdbcTemplate.update("DELETE FROM films WHERE id = ?", id);
-        if (rows == 0) {
-            throw new NotFoundException("Фильм с id '" + id + "' не найден");
-        }
+        if (rows == 0) throw new NotFoundException("Фильм с id '" + id + "' не найден");
     }
 
     @Override
     public void addLike(Long filmId, Long userId) {
-        jdbcTemplate.update("INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)", filmId, userId);
+        String sql = "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)";
+        try {
+            jdbcTemplate.update(sql, filmId, userId);
+        } catch (Exception e) {
+            log.info("Лайк уже существует или ошибка параметров: filmId={}, userId={}", filmId, userId);
+        }
     }
 
     @Override
     public void deleteLike(Long filmId, Long userId) {
-        int rows = jdbcTemplate.update("DELETE FROM film_likes WHERE film_id = ? AND user_id = ?", filmId, userId);
-        if (rows == 0) throw new NotFoundException("Лайк не найден");
+        jdbcTemplate.update("DELETE FROM film_likes WHERE film_id = ? AND user_id = ?", filmId, userId);
     }
 
     @Override
@@ -147,7 +149,6 @@ public class FilmDbStorage implements FilmStorage {
 
         sql.append("GROUP BY f.id, m.name ORDER BY likes_count DESC");
         List<Film> films = jdbcTemplate.query(sql.toString(), this::mapRowToFilm, params.toArray());
-
         loadDataForFilms(films);
         return films;
     }
@@ -162,9 +163,7 @@ public class FilmDbStorage implements FilmStorage {
                         "LEFT JOIN film_likes fl ON f.id = fl.film_id "
         );
 
-        if (genreId != null) {
-            sql.append("JOIN film_genres fg ON f.id = fg.film_id ");
-        }
+        if (genreId != null) sql.append("JOIN film_genres fg ON f.id = fg.film_id ");
         sql.append("WHERE 1=1 ");
         if (genreId != null) {
             sql.append("AND fg.genre_id = ? ");
@@ -207,15 +206,39 @@ public class FilmDbStorage implements FilmStorage {
                 "JOIN film_directors fd ON f.id = fd.film_id WHERE fd.director_id = ? " +
                 "GROUP BY f.id, m.name ";
 
-        if ("likes".equals(sortBy)) {
-            sql += "ORDER BY likes_count DESC";
-        } else {
-            sql += "ORDER BY f.release_date ASC";
-        }
+        sql += "likes".equals(sortBy) ? "ORDER BY likes_count DESC" : "ORDER BY f.release_date ASC";
 
         List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, directorId);
         loadDataForFilms(films);
         return films;
+    }
+
+    @Override
+    public Map<Long, List<Long>> getAllLikes() {
+        String sql = "SELECT user_id, film_id FROM film_likes";
+        Map<Long, List<Long>> userLikesMap = new HashMap<>();
+        jdbcTemplate.query(sql, rs -> {
+            userLikesMap.computeIfAbsent(rs.getLong("user_id"), k -> new ArrayList<>()).add(rs.getLong("film_id"));
+        });
+        return userLikesMap;
+    }
+
+    @Override
+    public List<Film> getFilmsNotLikedByUser(Long userId) {
+        String sql = """
+            SELECT DISTINCT f.*, m.name AS mpa_name
+            FROM films f
+            LEFT JOIN mpa m ON f.mpa_id = m.id
+            WHERE NOT EXISTS (SELECT 1 FROM film_likes fl WHERE fl.film_id = f.id AND fl.user_id = ?)
+            """;
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, userId);
+        loadDataForFilms(films);
+        return films;
+    }
+
+    @Override
+    public List<Film> getFilmsWithFilter(Map<String, String> params) {
+        return new ArrayList<>(findAll());
     }
 
     private void loadDataForFilms(List<Film> films) {
@@ -251,7 +274,6 @@ public class FilmDbStorage implements FilmStorage {
     private void updateDirectorsByFilmId(long filmId, List<Director> directors) {
         jdbcTemplate.update("DELETE FROM film_directors WHERE film_id = ?", filmId);
         if (directors == null || directors.isEmpty()) return;
-
         String sql = "INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)";
         jdbcTemplate.batchUpdate(sql, directors, directors.size(), (ps, d) -> {
             ps.setLong(1, filmId);
@@ -273,12 +295,10 @@ public class FilmDbStorage implements FilmStorage {
         film.setDescription(rs.getString("description"));
         film.setReleaseDate(rs.getDate("release_date").toLocalDate());
         film.setDuration(rs.getInt("duration"));
-        if (rs.getObject("mpa_id") != null) {
-            Mpa mpa = new Mpa();
-            mpa.setId(rs.getInt("mpa_id"));
-            mpa.setName(rs.getString("mpa_name"));
-            film.setMpa(mpa);
-        }
+        Mpa mpa = new Mpa();
+        mpa.setId(rs.getInt("mpa_id"));
+        mpa.setName(rs.getString("mpa_name"));
+        film.setMpa(mpa);
         return film;
     }
 }
