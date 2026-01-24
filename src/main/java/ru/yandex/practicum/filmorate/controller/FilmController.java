@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
@@ -39,21 +38,18 @@ public class FilmController {
     }
 
     @PutMapping("/{id}/like/{userId}")
-    public ResponseEntity<Void> addLike(@PathVariable Long id, @PathVariable Long userId) {
+    public void addLike(@PathVariable Long id, @PathVariable Long userId) {
         filmService.addLike(id, userId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/{filmId}")
-    public ResponseEntity<Void> deleteFilm(@PathVariable Long filmId) {
-        filmService.deleteFilm(filmId);
-        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}/like/{userId}")
-    public ResponseEntity<Void> deleteLike(@PathVariable Long id, @PathVariable Long userId) {
+    public void deleteLike(@PathVariable Long id, @PathVariable Long userId) {
         filmService.deleteLike(id, userId);
-        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{filmId}")
+    public void deleteFilm(@PathVariable Long filmId) {
+        filmService.deleteFilm(filmId);
     }
 
     @GetMapping("/popular")
@@ -68,7 +64,6 @@ public class FilmController {
     public List<Film> search(
             @RequestParam(name = "query") String query,
             @RequestParam(name = "by") String by) {
-        log.info("Получен запрос на поиск фильмов: query={}, by={}", query, by);
         return filmService.search(query, by);
     }
 
@@ -76,7 +71,6 @@ public class FilmController {
     public List<Film> getFilmsByDirector(
             @PathVariable Integer directorId,
             @RequestParam(defaultValue = "year") String sortBy) {
-        log.info("Получен запрос на фильмы режиссера {} с сортировкой по {}", directorId, sortBy);
         return filmService.getFilmsByDirector(directorId, sortBy);
     }
 

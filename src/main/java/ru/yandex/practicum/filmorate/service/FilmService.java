@@ -6,11 +6,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.GenreStorage;
-import ru.yandex.practicum.filmorate.storage.MpaStorage;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
-import ru.yandex.practicum.filmorate.storage.FeedStorage;
+import ru.yandex.practicum.filmorate.storage.*;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -21,6 +17,7 @@ import java.util.List;
 public class FilmService {
 
     private final FilmStorage filmStorage;
+    private final DirectorStorage directorStorage;
     private final UserStorage userStorage;
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
@@ -30,12 +27,14 @@ public class FilmService {
 
     public FilmService(
             FilmStorage filmStorage,
+            DirectorStorage directorStorage,
             UserStorage userStorage,
             MpaStorage mpaStorage,
             GenreStorage genreStorage,
             FeedStorage feedStorage
     ) {
         this.filmStorage = filmStorage;
+        this.directorStorage = directorStorage;
         this.userStorage = userStorage;
         this.mpaStorage = mpaStorage;
         this.genreStorage = genreStorage;
@@ -52,6 +51,7 @@ public class FilmService {
 
     public List<Film> getFilmsByDirector(Integer directorId, String sortBy) {
         log.info("Запрос фильмов режиссера id={} с сортировкой по {}", directorId, sortBy);
+        directorStorage.getDirectorById(directorId);
         return filmStorage.findAllBy(directorId, sortBy);
     }
 

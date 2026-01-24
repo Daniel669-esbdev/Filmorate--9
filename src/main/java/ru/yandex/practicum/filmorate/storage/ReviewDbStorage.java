@@ -51,9 +51,7 @@ public class ReviewDbStorage implements ReviewStorage {
         String sql = "UPDATE reviews SET content = ?, is_positive = ? WHERE id = ?";
         int updated = jdbcTemplate.update(sql, review.getContent(), review.getIsPositive(), review.getId());
 
-        if (updated == 0) {
-            throw new NotFoundException("Отзыв не найден");
-        }
+        if (updated == 0) throw new NotFoundException("Отзыв не найден");
 
         Review updatedReview = findById(review.getId()).get();
         feedStorage.addEvent(updatedReview.getUserId(), "REVIEW", "UPDATE", updatedReview.getId());
@@ -80,11 +78,12 @@ public class ReviewDbStorage implements ReviewStorage {
 
     @Override
     public List<Review> findByFilmId(Long filmId, Integer count) {
+        String sql;
         if (filmId == null || filmId == 0) {
-            String sql = "SELECT * FROM reviews ORDER BY useful DESC, id ASC LIMIT ?";
+            sql = "SELECT * FROM reviews ORDER BY useful DESC, id ASC LIMIT ?";
             return jdbcTemplate.query(sql, this::mapRowToReview, count);
         } else {
-            String sql = "SELECT * FROM reviews WHERE film_id = ? ORDER BY useful DESC, id ASC LIMIT ?";
+            sql = "SELECT * FROM reviews WHERE film_id = ? ORDER BY useful DESC, id ASC LIMIT ?";
             return jdbcTemplate.query(sql, this::mapRowToReview, filmId, count);
         }
     }
@@ -122,8 +121,7 @@ public class ReviewDbStorage implements ReviewStorage {
     }
 
     private void recalculateUseful(Long reviewId) {
-        String sql = "UPDATE reviews SET useful = (SELECT " +
-                "COALESCE(SUM(CASE WHEN is_like = true THEN 1 ELSE -1 END), 0) " +
+        String sql = "UPDATE reviews SET useful = (SELECT COALESCE(SUM(CASE WHEN is_like = true THEN 1 ELSE -1 END), 0) " +
                 "FROM review_votes WHERE review_id = ?) WHERE id = ?";
         jdbcTemplate.update(sql, reviewId, reviewId);
     }
