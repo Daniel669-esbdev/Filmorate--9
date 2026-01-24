@@ -4,9 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Review;
@@ -25,7 +23,6 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     public Review create(@Valid @RequestBody Review review) {
         return reviewService.create(review);
     }
@@ -36,7 +33,6 @@ public class ReviewController {
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         reviewService.delete(id);
     }
@@ -48,85 +44,48 @@ public class ReviewController {
 
     @GetMapping
     public List<Review> getByFilm(
-            @RequestParam("filmId") Long filmId,
+            @RequestParam(value = "filmId", required = false) Long filmId,
             @RequestParam(value = "count", defaultValue = "10") Integer count) {
         return reviewService.getByFilm(filmId, count);
     }
 
     @PutMapping("/{id}/like/{userId}")
-    public Review addLike(
+    public void addLike(
             @PathVariable Long id,
             @PathVariable Long userId) {
-        log.info("PUT /reviews/{}/like/{}", id, userId);
-        return reviewService.addLike(id, userId);
+        reviewService.addLike(id, userId);
     }
 
     @DeleteMapping("/{id}/like/{userId}")
-    public Review removeLike(
+    public void removeLike(
             @PathVariable Long id,
             @PathVariable Long userId) {
-        log.info("DELETE /reviews/{}/like/{}", id, userId);
-        return reviewService.removeLike(id, userId);
+        reviewService.removeLike(id, userId);
     }
 
     @PutMapping("/{id}/dislike/{userId}")
-    public Review addDislike(
+    public void addDislike(
             @PathVariable Long id,
             @PathVariable Long userId) {
-        log.info("PUT /reviews/{}/dislike/{}", id, userId);
-        return reviewService.addDislike(id, userId);
+        reviewService.addDislike(id, userId);
     }
 
     @DeleteMapping("/{id}/dislike/{userId}")
-    public Review removeDislike(
+    public void removeDislike(
             @PathVariable Long id,
             @PathVariable Long userId) {
-        log.info("DELETE /reviews/{}/dislike/{}", id, userId);
-        return reviewService.removeDislike(id, userId);
-    }
-
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
-        log.error("Type mismatch error", ex);
-        String paramName = ex.getName() != null ? ex.getName() : "параметр";
-        String message = String.format(
-                "Некорректное значение для %s: '%s'. Ожидалось число (Long).",
-                paramName, ex.getValue()
-        );
-        return Map.of("error", message);
+        reviewService.removeDislike(id, userId);
     }
 
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public Map<String, String> handleNotFound(NotFoundException ex) {
-        log.error("Not found error", ex);
         return Map.of("error", ex.getMessage());
     }
 
     @ExceptionHandler(ValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleValidationException(ValidationException ex) {
-        log.error("Validation error", ex);
-        return Map.of("error", ex.getMessage());
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleValidation(MethodArgumentNotValidException ex) {
-        log.error("Validation error", ex);
-        String message = ex.getBindingResult().getFieldErrors()
-                .stream()
-                .findFirst()
-                .map(err -> err.getDefaultMessage())
-                .orElse("Ошибка валидации");
-        return Map.of("error", message);
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleIllegalArgument(IllegalArgumentException ex) {
-        log.error("Illegal argument error", ex);
         return Map.of("error", ex.getMessage());
     }
 
@@ -134,6 +93,6 @@ public class ReviewController {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, String> handleAllExceptions(Exception ex) {
         log.error("Internal server error", ex);
-        return Map.of("error", "Произошла непредвиденная ошибка");
+        return Map.of("error", ex.getMessage() != null ? ex.getMessage() : "Произошла непредвиденная ошибка");
     }
 }

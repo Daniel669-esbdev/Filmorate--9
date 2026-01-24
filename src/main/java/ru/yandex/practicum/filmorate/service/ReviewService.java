@@ -69,28 +69,24 @@ public class ReviewService {
         return reviewStorage.findByFilmId(filmId, count != null ? count : 10);
     }
 
-    public Review addLike(Long reviewId, Long userId) {
+    public void addLike(Long reviewId, Long userId) {
         validateReviewAndUser(reviewId, userId);
         reviewStorage.addLike(reviewId, userId);
-        return getById(reviewId);
     }
 
-    public Review removeLike(Long reviewId, Long userId) {
+    public void removeLike(Long reviewId, Long userId) {
         validateReviewAndUser(reviewId, userId);
         reviewStorage.removeLike(reviewId, userId);
-        return getById(reviewId);
     }
 
-    public Review addDislike(Long reviewId, Long userId) {
+    public void addDislike(Long reviewId, Long userId) {
         validateReviewAndUser(reviewId, userId);
         reviewStorage.addDislike(reviewId, userId);
-        return getById(reviewId);
     }
 
-    public Review removeDislike(Long reviewId, Long userId) {
+    public void removeDislike(Long reviewId, Long userId) {
         validateReviewAndUser(reviewId, userId);
         reviewStorage.removeDislike(reviewId, userId);
-        return getById(reviewId);
     }
 
     private void validateReviewAndUser(Long reviewId, Long userId) {
