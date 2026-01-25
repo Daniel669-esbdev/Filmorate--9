@@ -237,6 +237,24 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
+    public List<Film> findAllByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            log.info("Список ID пуст, возвращен пустой список фильмов");
+            return Collections.emptyList();
+        }
+
+        String sql = "SELECT f.*, m.name AS mpa_name FROM films f LEFT JOIN mpa m ON f.mpa_id = m.id WHERE f.id IN (:ids)";
+        MapSqlParameterSource params = new MapSqlParameterSource("ids", ids);
+
+        List<Film> films = namedParameterJdbcTemplate.query(sql, params, this::mapRowToFilm);
+
+        loadDataForFilms(films);
+
+        log.info("Успешно получено {} фильмов по списку ID", films.size());
+        return films;
+    }
+
+    @Override
     public List<Film> getFilmsWithFilter(Map<String, String> params) {
         return new ArrayList<>(findAll());
     }

@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
@@ -35,6 +36,7 @@ public class UserService {
 
     public User create(User user) {
         log.info("Создание пользователя: login={}", user.getLogin());
+        validateUser(user);
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
@@ -44,6 +46,7 @@ public class UserService {
     public User update(User user) {
         log.info("Обновление пользователя: id={}", user.getId());
         getUserOrThrow(user.getId());
+        validateUser(user);
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
@@ -56,10 +59,10 @@ public class UserService {
     }
 
     public void deleteUser(Long id) {
-        log.info("Deleting a user with id = {}", id);
-
+        log.info("Удаление пользователя с id = {}", id);
+        getUserOrThrow(id);
         userStorage.deleteUser(id);
-        log.info("Deletion was successful");
+        log.info("Удаление пользователя id = {} успешно выполнено", id);
     }
 
     public void addFriend(Long userId, Long friendId) {
@@ -101,6 +104,18 @@ public class UserService {
         log.info("Запрос рекомендаций для пользователя {}", userId);
         getUserOrThrow(userId);
         return recommendationService.getRecommendations(userId);
+    }
+
+    private void validateUser(User user) {
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new ValidationException("Email не может быть пустым");
+        }
+        if (user.getLogin() == null || user.getLogin().isBlank()) {
+            throw new ValidationException("Логин не может быть пустым");
+        }
+        if (user.getBirthday() == null) {
+            throw new ValidationException("Дата рождения должна быть указана");
+        }
     }
 
     private User getUserOrThrow(Long id) {

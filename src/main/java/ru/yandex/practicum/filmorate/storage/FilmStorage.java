@@ -36,4 +36,6 @@ public interface FilmStorage {
     List<Film> getFilmsNotLikedByUser(Long userId);
 
     List<Film> getFilmsWithFilter(Map<String, String> params);
+
+    List<Film> findAllByIds(Collection<Long> ids);
 }

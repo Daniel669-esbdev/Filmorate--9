@@ -9,7 +9,6 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.service.ReviewService;
-import ru.yandex.practicum.filmorate.service.ReviewUpdate;
 
 import java.util.List;
 import java.util.Map;
@@ -24,21 +23,26 @@ public class ReviewController {
 
     @PostMapping
     public Review create(@Valid @RequestBody Review review) {
+        log.info("Получен запрос на создание отзыва");
         return reviewService.create(review);
     }
 
     @PutMapping
-    public Review update(@Valid @RequestBody ReviewUpdate reviewUpdate) {
-        return reviewService.update(reviewUpdate);
+    public Review update(@Valid @RequestBody Review review) {
+        log.info("Получен запрос на обновление отзыва с id={}", review.getId());
+        return reviewService.update(review);
     }
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
+        log.info("Получен запрос на удаление отзыва id={}", id);
         reviewService.delete(id);
     }
 
     @GetMapping("/{id}")
     public Review getById(@PathVariable Long id) {
+        log.info("Получен запрос на получение отзыва id={}", id);
         return reviewService.getById(id);
     }
 
@@ -46,6 +50,7 @@ public class ReviewController {
     public List<Review> getByFilm(
             @RequestParam(value = "filmId", required = false) Long filmId,
             @RequestParam(value = "count", defaultValue = "10") Integer count) {
+        log.info("Получен запрос на получение отзывов для фильма id={}, count={}", filmId, count);
         return reviewService.getByFilm(filmId, count);
     }
 
@@ -53,6 +58,7 @@ public class ReviewController {
     public void addLike(
             @PathVariable Long id,
             @PathVariable Long userId) {
+        log.info("Добавление лайка: отзыв={}, пользователь={}", id, userId);
         reviewService.addLike(id, userId);
     }
 
@@ -60,6 +66,7 @@ public class ReviewController {
     public void removeLike(
             @PathVariable Long id,
             @PathVariable Long userId) {
+        log.info("Удаление лайка: отзыв={}, пользователь={}", id, userId);
         reviewService.removeLike(id, userId);
     }
 
@@ -67,6 +74,7 @@ public class ReviewController {
     public void addDislike(
             @PathVariable Long id,
             @PathVariable Long userId) {
+        log.info("Добавление дизлайка: отзыв={}, пользователь={}", id, userId);
         reviewService.addDislike(id, userId);
     }
 
@@ -74,6 +82,7 @@ public class ReviewController {
     public void removeDislike(
             @PathVariable Long id,
             @PathVariable Long userId) {
+        log.info("Удаление дизлайка: отзыв={}, пользователь={}", id, userId);
         reviewService.removeDislike(id, userId);
     }
 

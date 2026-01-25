@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RecommendationService {
     private final FilmStorage filmStorage;
+    private static final int MAX_SIMILAR_USERS = 10;
 
     public List<Film> getRecommendations(Long userId) {
         log.info("Начат процесс поиска рекомендаций для пользователя с id={}", userId);
@@ -26,40 +27,38 @@ public class RecommendationService {
         }
 
         List<Long> targetUserLikes = allLikes.get(userId);
-        long bestMatchUserId = -1;
-        int maxCommonLikes = 0;
 
-        for (Map.Entry<Long, List<Long>> entry : allLikes.entrySet()) {
-            long otherUserId = entry.getKey();
-            if (otherUserId == userId) continue;
+        List<Long> similarUserIds = allLikes.entrySet().stream()
+                .filter(entry -> !entry.getKey().equals(userId))
+                .map(entry -> {
+                    long commonLikesCount = targetUserLikes.stream()
+                            .filter(filmId -> entry.getValue().contains(filmId))
+                            .count();
+                    return Map.entry(entry.getKey(), commonLikesCount);
+                })
+                .filter(entry -> entry.getValue() > 0)
+                .sorted((e1, e2) -> Long.compare(e2.getValue(), e1.getValue()))
+                .limit(MAX_SIMILAR_USERS)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
 
-            List<Long> otherUserLikes = entry.getValue();
-            int commonLikesCount = (int) targetUserLikes.stream()
-                    .filter(otherUserLikes::contains)
-                    .count();
-
-            if (commonLikesCount > maxCommonLikes) {
-                maxCommonLikes = commonLikesCount;
-                bestMatchUserId = otherUserId;
-            }
-        }
-
-        if (bestMatchUserId == -1) {
+        if (similarUserIds.isEmpty()) {
             log.info("Не найдено пользователей с похожими вкусами для id={}", userId);
             return Collections.emptyList();
         }
 
-        List<Long> bestMatchUserLikes = allLikes.get(bestMatchUserId);
-        List<Long> recommendedFilmIds = bestMatchUserLikes.stream()
+        Set<Long> recommendedFilmIds = similarUserIds.stream()
+                .flatMap(id -> allLikes.get(id).stream())
                 .filter(filmId -> !targetUserLikes.contains(filmId))
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
 
-        log.info("Пользователь id={} наиболее похож на пользователя id={}. Найдено {} рекомендаций.",
-                userId, bestMatchUserId, recommendedFilmIds.size());
+        log.info("Для пользователя id={} найдено {} похожих пользователей. Сформировано {} рекомендаций.",
+                userId, similarUserIds.size(), recommendedFilmIds.size());
 
-        return recommendedFilmIds.stream()
-                .map(filmStorage::getById)
-                .flatMap(Optional::stream)
-                .collect(Collectors.toList());
+        if (recommendedFilmIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return filmStorage.findAllByIds(recommendedFilmIds);
     }
 }

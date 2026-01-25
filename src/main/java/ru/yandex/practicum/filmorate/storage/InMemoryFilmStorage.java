@@ -38,6 +38,17 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
+    public List<Film> findAllByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return ids.stream()
+                .map(films::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public void deleteFilm(Long id) {
         films.remove(id);
         likes.remove(id);
@@ -63,8 +74,8 @@ public class InMemoryFilmStorage implements FilmStorage {
     public List<Film> getPopular(int count, Integer genreId, Integer year) {
         return films.values().stream()
                 .filter(film -> year == null || film.getReleaseDate().getYear() == year)
-                .filter(film -> genreId == null || film.getGenres().stream()
-                        .anyMatch(g -> g.getId() == genreId))
+                .filter(film -> genreId == null || (film.getGenres() != null && film.getGenres().stream()
+                        .anyMatch(g -> g.getId().equals(genreId))))
                 .sorted((f1, f2) -> {
                     int likes1 = likes.getOrDefault(f1.getId(), Collections.emptySet()).size();
                     int likes2 = likes.getOrDefault(f2.getId(), Collections.emptySet()).size();
@@ -82,8 +93,8 @@ public class InMemoryFilmStorage implements FilmStorage {
                     boolean matchTitle = by.contains("title") &&
                             film.getName().toLowerCase().contains(lowerQuery);
                     boolean matchDirector = by.contains("director") &&
-                            film.getDirectors().stream()
-                                    .anyMatch(d -> d.getName().toLowerCase().contains(lowerQuery));
+                            film.getDirectors() != null && film.getDirectors().stream()
+                            .anyMatch(d -> d.getName().toLowerCase().contains(lowerQuery));
                     return matchTitle || matchDirector;
                 })
                 .sorted((f1, f2) -> {
@@ -97,7 +108,7 @@ public class InMemoryFilmStorage implements FilmStorage {
     @Override
     public List<Film> findAllBy(Integer directorId, String sortBy) {
         return films.values().stream()
-                .filter(film -> film.getDirectors().stream()
+                .filter(film -> film.getDirectors() != null && film.getDirectors().stream()
                         .anyMatch(d -> d.getId().equals(directorId)))
                 .sorted((f1, f2) -> {
                     if ("likes".equals(sortBy)) {

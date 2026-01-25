@@ -3,8 +3,8 @@ package ru.yandex.practicum.filmorate.storage;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Optional;
 
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -19,7 +19,7 @@ import ru.yandex.practicum.filmorate.model.Director;
 @AllArgsConstructor
 @Slf4j
 public class DirectorDBStorage implements DirectorStorage {
-    JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
     private final RowMapper<Director> directorRowMapper = (rs, rowNum) -> {
         Director director = new Director();
@@ -40,19 +40,16 @@ public class DirectorDBStorage implements DirectorStorage {
     }
 
     @Override
-    public Director getDirectorById(int directorId) {
+    public Optional<Director> getDirectorById(int directorId) {
         String selectDirectorByIdSql = """
                     SELECT *
                     FROM directors
                     WHERE id = ?
                 """;
 
-        try {
-            return jdbcTemplate.queryForObject(selectDirectorByIdSql, directorRowMapper, directorId);
-        } catch (EmptyResultDataAccessException e) {
-            throw new NotFoundException(String.format("Режиссер не найден"));
-        }
-
+        return jdbcTemplate.query(selectDirectorByIdSql, directorRowMapper, directorId)
+                .stream()
+                .findFirst();
     }
 
     @Override

@@ -138,8 +138,32 @@ public class FilmService {
     private void validateFilm(Film film) {
         log.debug("Начало валидации фильма: name={}, releaseDate={}", film.getName(), film.getReleaseDate());
 
-        if (film.getReleaseDate() != null && film.getReleaseDate().isBefore(EARLIEST_RELEASE_DATE)) {
+        if (film.getName() == null || film.getName().isBlank()) {
+            String errorMsg = "Название фильма не может быть пустым";
+            log.error(errorMsg);
+            throw new ValidationException(errorMsg);
+        }
+
+        if (film.getDescription() == null || film.getDescription().isBlank()) {
+            String errorMsg = "Описание фильма не может быть пустым";
+            log.error(errorMsg);
+            throw new ValidationException(errorMsg);
+        }
+
+        if (film.getReleaseDate() == null) {
+            String errorMsg = "Дата релиза должна быть указана";
+            log.error(errorMsg);
+            throw new ValidationException(errorMsg);
+        }
+
+        if (film.getReleaseDate().isBefore(EARLIEST_RELEASE_DATE)) {
             String errorMsg = "Дата релиза — не раньше 28 декабря 1895 года";
+            log.error(errorMsg);
+            throw new ValidationException(errorMsg);
+        }
+
+        if (film.getDuration() <= 0) {
+            String errorMsg = "Продолжительность фильма должна быть положительной";
             log.error(errorMsg);
             throw new ValidationException(errorMsg);
         }
