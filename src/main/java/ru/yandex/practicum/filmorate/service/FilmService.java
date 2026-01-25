@@ -51,7 +51,10 @@ public class FilmService {
 
     public List<Film> getFilmsByDirector(Integer directorId, String sortBy) {
         log.info("Запрос фильмов режиссера id={} с сортировкой по {}", directorId, sortBy);
-        directorStorage.getDirectorById(directorId);
+
+        directorStorage.getDirectorById(directorId)
+                .orElseThrow(() -> new NotFoundException("Режиссер с id=" + directorId + " не найден"));
+
         return filmStorage.findAllBy(directorId, sortBy);
     }
 
@@ -120,6 +123,9 @@ public class FilmService {
 
     public List<Film> search(String query, String by) {
         log.info("Поиск фильмов по запросу: query={}, by={}", query, by);
+        if (query == null || query.isBlank() || by == null || by.isBlank()) {
+            throw new ValidationException("Параметры поиска не могут быть пустыми");
+        }
         return filmStorage.search(query, by);
     }
 
