@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ArrayList;
 
-public class InMemoryUserStorage implements UserStorage {
+public abstract class InMemoryUserStorage implements UserStorage {
     private final Map<Long, User> users = new HashMap<>();
     private long idCounter = 1;
 
@@ -33,6 +33,10 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public Optional<User> getById(Long id) {
         return Optional.ofNullable(users.get(id));
+    }
+
+    @Override
+    public void deleteUser(Long id) {
     }
 
     @Override

@@ -15,6 +15,8 @@ public interface UserStorage {
 
     Optional<User> getById(Long id);
 
+    void deleteUser(Long id);
+
     void addFriend(Long userId, Long friendId);
 
     void deleteFriend(Long userId, Long friendId);
@@ -22,4 +24,6 @@ public interface UserStorage {
     List<User> getFriends(Long userId);
 
     List<User> getCommonFriends(Long userId, Long otherId);
+
+    boolean existsById(Long id);
 }
